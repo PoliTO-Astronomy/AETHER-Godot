@@ -16,6 +16,7 @@ config/version="0.1"
 run/main_scene="res://scenes/world.tscn"
 config/features=PackedStringArray("4.4", "Double Precision", "GL Compatibility")
 config/icon="res://icon.svg"
+config/windows_native_icon="res://asset/AETHER_icon.ico"
 
 [autoload]
 
