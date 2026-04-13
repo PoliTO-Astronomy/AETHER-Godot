@@ -1,0 +1,82 @@
+[gd_scene load_steps=3 format=3 uid="uid://owonx4k017vt"]
+
+[ext_resource type="Script" uid="uid://djgel4sl6epn1" path="res://scripts/jet_entry.gd" id="1_3tf12"]
+[ext_resource type="PackedScene" uid="uid://b31lb3a4drve4" path="res://scenes/ui/sanitized_edit.tscn" id="2_65ngw"]
+
+[node name="JetEntry" type="GridContainer" groups=["jet_entry"]]
+custom_minimum_size = Vector2(475, 45)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+focus_mode = 1
+columns = 8
+script = ExtResource("1_3tf12")
+
+[node name="JetID" type="Label" parent="."]
+custom_minimum_size = Vector2(40, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 1
+text = "0"
+horizontal_alignment = 1
+
+[node name="SpeedEdit" parent="." instance=ExtResource("2_65ngw")]
+custom_minimum_size = Vector2(48, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 2
+higher_bound = 10000.0
+no_decimal = true
+
+[node name="LatitudeEdit" parent="." instance=ExtResource("2_65ngw")]
+custom_minimum_size = Vector2(48, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 2
+lower_bound = -90.0
+higher_bound = 90.0
+
+[node name="LongitudeEdit" parent="." instance=ExtResource("2_65ngw")]
+custom_minimum_size = Vector2(48, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 2
+higher_bound = 360.0
+
+[node name="DiffusionEdit" parent="." instance=ExtResource("2_65ngw")]
+custom_minimum_size = Vector2(48, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 2
+higher_bound = 100.0
+no_decimal = true
+
+[node name="ColorPickerButton" type="ColorPickerButton" parent="."]
+custom_minimum_size = Vector2(48, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+color = Color(0.454524, 0.454524, 0.454524, 1)
+metadata/_edit_use_anchors_ = true
+
+[node name="ToggleJet" type="CheckButton" parent="."]
+custom_minimum_size = Vector2(40, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+button_pressed = true
+metadata/_edit_use_anchors_ = true
+
+[node name="RemoveJetBtn" type="Button" parent="." groups=["remove"]]
+custom_minimum_size = Vector2(40, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+text = "X"
+metadata/_edit_use_anchors_ = true
+
+[connection signal="pressed" from="ToggleJet" to="." method="_on_toggle_jet_pressed"]
+[connection signal="pressed" from="RemoveJetBtn" to="." method="_on_remove_jet_btn_pressed"]
