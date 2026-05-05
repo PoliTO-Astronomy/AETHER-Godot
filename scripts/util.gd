@@ -66,7 +66,7 @@ var w := 0.0 ## Argument of perihelion
 var incl := 0.0 ## Inclination
 var i := 0.0 ## angle between rotationa xis and the orbital plane in degrees
 var phi := 0.0 ## angle between projection of axis direction and sun direction at perihelion in degrees
-
+var sky_motion_pa := 0.0
 ## Orbital comet basis
 var orbital_basis: Basis = Basis() ## Orbital basis of the comet in the 3D space
 
@@ -97,9 +97,9 @@ var is_simulation: bool = true ## True: simulation enabled, False: instant simul
 
 # Labels and LineEdits
 @onready var current_camera_label: Label = $"/root/Hud/Viewport/Panel/CurrCameraLabel"
-@onready var date_label: Label = $"/root/Hud/Viewport/Panel/DateLabel"
+@onready var date_label: Label = $"/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer/DataControl/DateLabel"
 @onready var nucleus_date_label: Label = $"/root/Hud/Viewport/NucleusPanelRect/NucleusDateLabel"
-@onready var current_fov_label: Label = $"/root/Hud/Viewport/Panel/CenterContainer/ScaleLabel"
+@onready var current_fov_label: Label = $"/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer/LabelControl/CenterContainer/ScaleLabel"
 @onready var beta_val_line_edit: LineEdit = $"/root/Hud/Body/CometTab/Control/BetaValLineEdit"
 @onready var accel_val_line_edit: LineEdit = $"/root/Hud/Body/SimTab/Control/AccelValLineEdit"
 @onready var comet_incl_line_edit: SliderWithLineEdit = $"/root/Hud/Body/CometTab/Control/EditCometIncl"
@@ -115,12 +115,12 @@ var is_simulation: bool = true ## True: simulation enabled, False: instant simul
 @onready var subsolar_lat_line_edit: LineEdit = $"/root/Hud/Body/CometTab/Control/SubsolarPLineEdit"
 
 # coords grid labels
-@onready var ra_center_label: Label = $"/root/Hud/Viewport/Panel/CoordinateGrid/RACenterLabel"
-@onready var dec_center_label: Label = $"/root/Hud/Viewport/Panel/CoordinateGrid/DECCenterLabel"
-@onready var ra_left_label: Label = $"/root/Hud/Viewport/Panel/CoordinateGrid/RALeftLabel"
-@onready var ra_right_label: Label = $"/root/Hud/Viewport/Panel/CoordinateGrid/RARightLabel"
-@onready var dec_left_label: Label = $"/root/Hud/Viewport/Panel/CoordinateGrid/DECLeftLabel"
-@onready var dec_right_label: Label = $"/root/Hud/Viewport/Panel/CoordinateGrid/DECRightLabel"
+@onready var ra_center_label: Label = $"/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer/LabelControl/RACenterLabel"
+@onready var dec_center_label: Label = $"/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer/LabelControl/DECCenterLabel"
+@onready var ra_left_label: Label = $"/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer/LabelControl/RALeftLabel"
+@onready var ra_right_label: Label = $"/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer/LabelControl/RARightLabel"
+@onready var dec_left_label: Label = $"/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer/LabelControl/DECLeftLabel"
+@onready var dec_right_label: Label = $"/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer/LabelControl/DECRightLabel"
 
 
 #scale/sim tab variables
@@ -268,3 +268,10 @@ func generate_gaussian_vector(mean: float, stddev: float, _radius: float) -> Vec
 	# scale the direction by the length to get a point inside the sphere
 	var point := direction * length
 	return point
+
+func has_jpl_data() -> bool:
+	if jpl_data == null:
+		return false
+	if jpl_data is Array and jpl_data.is_empty():
+		return false
+	return true

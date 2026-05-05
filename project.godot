@@ -12,10 +12,10 @@ config_version=5
 
 config/name="Project Aether"
 config/description="Analysis of Evolved Thermal Hydrodynamics in Emission Regions"
-config/version="0.1"
+config/version="0.9.7"
 run/main_scene="res://scenes/world.tscn"
-config/features=PackedStringArray("4.4", "Double Precision", "GL Compatibility")
-config/icon="res://icon.svg"
+config/features=PackedStringArray("4.4", "GL Compatibility")
+config/icon="uid://2fs7kbok4x0d"
 config/windows_native_icon="res://asset/AETHER_icon.ico"
 
 [autoload]
@@ -93,3 +93,8 @@ zoom_out={
 [network]
 
 tls/enable_tls_v1.3=false
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true

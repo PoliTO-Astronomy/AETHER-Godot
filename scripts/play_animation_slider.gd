@@ -17,6 +17,7 @@ func tick() -> void:
 func reset() -> void:
 	$Slider.value = 0
 func _on_play_btn_pressed() -> void:
+	_commit_focused_line_edit()
 	Util.is_simulation = true
 	get_tree().call_group("animation", "animation_started")
 	$PlayBtn.disabled = true
@@ -25,6 +26,7 @@ func _on_play_btn_pressed() -> void:
 	$StopBtn.disabled = false
 
 func _on_play_instant_btn_pressed() -> void:
+	_commit_focused_line_edit()
 	Util.is_simulation = false
 	get_tree().call_group("animation", "animation_started")
 	$PlayBtn.disabled = true
@@ -66,3 +68,11 @@ func instant_simulation() -> void:
 	$PauseBtn.disabled = true
 	$StopBtn.disabled = false
 	$Slider.value = num_steps
+
+func _commit_focused_line_edit() -> void:
+	var focused := get_viewport().gui_get_focus_owner()
+	if focused is LineEdit:
+		focused.release_focus()
+		
+func is_stop_enabled() -> bool:
+	return not $StopBtn.disabled

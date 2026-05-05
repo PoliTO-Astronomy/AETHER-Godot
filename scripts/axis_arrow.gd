@@ -8,7 +8,7 @@ class_name AxisArrow
 var _original_arm_mesh_height: float = 1.0
 var _original_arm_mesh_scale: Vector3 = Vector3.ONE
 
-enum AXIS_TYPE {X, Y, Z, SUN, REVERSE_Y}
+enum AXIS_TYPE {X, Y, Z, SUN, REVERSE_Y, VELOCITY}
 var axis_type: AXIS_TYPE
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
@@ -61,7 +61,13 @@ func set_axis_type(type: AXIS_TYPE) -> void:
 			arrow_arm.get_surface_override_material(0).albedo_color = Color(Color.YELLOW, ALPHA)
 			arrow_head.get_surface_override_material(0).albedo_color = Color(Color.YELLOW, ALPHA)
 			pass
-		
+		AXIS_TYPE.VELOCITY:
+			position = Vector3.ZERO
+			var vel_color := Color(0.35, 0.85, 1.0, ALPHA)
+			arrow_arm.get_surface_override_material(0).albedo_color = vel_color
+			arrow_head.get_surface_override_material(0).albedo_color = vel_color
+			pass
+			
 func set_height(value: float, distance: float = 0) -> void:
 	height = max(0.01, value)
 	if is_node_ready():
@@ -79,7 +85,9 @@ func set_height(value: float, distance: float = 0) -> void:
 				arrow_head.scale = Vector3.ZERO
 				arrow_arm.scale = arrow_arm.scale * 0.9
 				arrow_arm.position.y = - height / 4 + _original_arm_mesh_height / 8
-				
+			AXIS_TYPE.VELOCITY:
+				arrow_arm.position.y = height/2 
+				arrow_head.position.y = height
 			_:
 				arrow_arm.position.y = height / 2 - _original_arm_mesh_height / 4
 				# positioning arrow heads
@@ -92,3 +100,14 @@ func toggle_axis(type: AXIS_TYPE) -> void:
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 #func _process(delta: float) -> void:
 	#pass
+
+func set_velocity_direction(direction: Vector3) -> void:
+	if direction.length_squared() < 1e-12:
+		return
+
+	var dir := direction.normalized()
+
+	# Ruota la freccia nella direzione richiesta,
+	# ma il nodo resta centrato sulla cometa.
+	position = Vector3.ZERO
+	quaternion = Quaternion(Vector3.UP, dir).normalized()

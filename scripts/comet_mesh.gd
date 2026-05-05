@@ -44,6 +44,7 @@ var emitter_scene := preload("res://scenes/particle_emitter.tscn")
 @onready var y_axis: AxisArrow
 @onready var z_axis: AxisArrow
 @onready var reverse_y_axis: AxisArrow
+@onready var velocity_axis: AxisArrow
 @onready var animation_slider: AnimationSlider = $"/root/Hud/Body/TabButtons/AnimationSlider"
 
 @export var light_source: Light3D
@@ -54,6 +55,14 @@ var starting_rotation: Vector3
 var rotation_angle: float = 0.0
 
 var speed_sim: int = 1
+
+var reload_timer: Timer
+var is_holding_next := false
+var hold_started_next := false
+var is_holding_prev := false
+var hold_started_prev := false
+@onready var hold_start_timer: Timer = get_node("/root/Hud/Body/CometTab/HoldStartTimer")
+@onready var repeat_timer: Timer = get_node("/root/Hud/Body/CometTab/RepeatTimer")
 
 func _ready() -> void:
 	var _x_axis := axis_scene.instantiate() as AxisArrow
@@ -82,6 +91,14 @@ func _ready() -> void:
 	_reverse_y_axis.set_axis_type(AxisArrow.AXIS_TYPE.REVERSE_Y)
 	_reverse_y_axis.set_height(mesh.height)
 	
+	var _velocity_axis := axis_scene.instantiate() as AxisArrow
+	add_child(_velocity_axis)
+	_velocity_axis.add_to_group("toggle_axis")
+	_velocity_axis.set_axis_type(AxisArrow.AXIS_TYPE.VELOCITY)
+	_velocity_axis.set_height(mesh.height)
+	_velocity_axis.visible = false
+	velocity_axis = _velocity_axis
+	
 	x_axis = _x_axis
 	y_axis = _y_axis
 	z_axis = _z_axis
@@ -97,7 +114,18 @@ func _ready() -> void:
 	
 	Util.comet_radius = mesh.radius
 	update_comet_orientation()
+	reload_timer = Timer.new()
+	reload_timer.one_shot = true
+	reload_timer.wait_time = 0.2
+	reload_timer.timeout.connect(_on_reload_timeout)
+	add_child(reload_timer)
+	update_velocity_axis()
 
+func request_reload():
+	reload_timer.start()
+
+func _on_reload_timeout():
+	rerun_instant_simulation_for_new_date()
 		
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:
@@ -147,21 +175,20 @@ func instant_simulation() -> void:
 
 func simulation_setup() -> void:
 	get_tree().call_group("disable", "disable_btn", "LoadBtn")
+
 	Util.equatorial_rotation = quaternion
 	look_at(Util.sun_direction_vector, Vector3.UP)
 	rotate(transform.basis.y, deg_to_rad(-90))
-	# normalizing the basis
 	transform.basis = transform.basis.orthonormalized()
-	# used by emitters to convert from equatorial to orbital system
 	Util.orbital_basis = transform.basis
 	Util.orbital_transformation = transform
-	# resuming the rotation
 	quaternion = Util.equatorial_rotation
 	starting_rotation = rotation
 
 	n_steps = int(num_rotation * frequency * 60 / jet_rate)
 	angle_per_step = 1.0 / (frequency * 60.0 / jet_rate) * 360.0
 	animation_slider.set_step_rate(100.0 / n_steps)
+
 	
 ## Called by play_animation_slider._on_play_btn_pressed
 func animation_started() -> void:
@@ -179,7 +206,6 @@ func animation_started() -> void:
 			
 	if animation_state == ANIMATION_STATE.STARTED:
 		simulation_setup()
-
 		for emitter: Emitter in get_tree().get_nodes_in_group("emitter"):
 			emitter.set_number_particles(n_steps)
 	
@@ -197,7 +223,7 @@ func animation_paused() -> void:
 func animation_stopped() -> void:
 	animation_state = ANIMATION_STATE.STOPPED
 
-	reset_rotation()
+	#reset_rotation()
 	# delete all particles
 	for emitter: Emitter in get_tree().get_nodes_in_group("emitter"):
 		emitter.reset_particles()
@@ -209,7 +235,7 @@ func animation_stopped() -> void:
 	n_steps = 0
 	total_sim_time = 0
 
-	quaternion = Util.equatorial_rotation
+	#quaternion = Util.equatorial_rotation
 	get_tree().call_group("enable", "enable_btn", "LoadBtn")
 
 ## Called by play_animation_slider._on_speed_up_btn_pressed
@@ -286,6 +312,8 @@ func update_radius(value: float) -> void:
 		z_axis.set_height(mesh.height)
 	if reverse_y_axis:
 		reverse_y_axis.set_height(mesh.height)
+	if velocity_axis:
+		velocity_axis.set_height(mesh.height)
 	# update position and size of sun axis
 	get_tree().call_group("sun", "update_sun_axis", value * 2)
 	# print("calling update_position on emitter\n")
@@ -299,12 +327,15 @@ func update_direction_rotation(value: float) -> void:
 	Util.comet_direction = value
 	
 	update_comet_orientation()
+	update_velocity_axis()
+	
 func update_inclination_rotation(value: float) -> void:
 	if Util.PRINT_UPDATE_METHOD: print("Updated comet inclination:%f"%value)
 	Util.comet_inclination = - value
 	print("Inclination set to:%f"%Util.comet_inclination)
 	update_comet_orientation()
-
+	update_velocity_axis()
+	
 #jets related
 func update_jet_rate(value: float) -> void:
 	if Util.PRINT_UPDATE_METHOD: print("Updated jet_rate:%f"%value)
@@ -352,6 +383,7 @@ func update_alpha_p(value: float, booted: bool = true) -> void:
 	update_lambda_beta()
 	update_i_phi()
 	update_subsolar_latitude()
+	update_velocity_axis()
 func update_delta_p(value: float, booted: bool = true) -> void:
 	# to prevent to being called at startup
 	if not booted:
@@ -365,6 +397,8 @@ func update_delta_p(value: float, booted: bool = true) -> void:
 	update_lambda_beta()
 	update_i_phi()
 	update_subsolar_latitude()
+	update_velocity_axis()
+	
 func update_pa_incl() -> void:
 	var alpha_rad := deg_to_rad(Util.alpha_p)
 	var delta_rad := deg_to_rad(Util.delta_p)
@@ -465,28 +499,88 @@ func update_subsolar_latitude() -> void:
 	# var true_anomaly := deg_to_rad(272.6)
 	Util.subsolar_latitude = asin(sin(I) * sin(true_anomaly + phi))
 	Util.subsolar_lat_line_edit.text = str("%.2f" % rad_to_deg(Util.subsolar_latitude))
+	print("I: ", I)
+	print("phi: ", phi)
+	print("true_anomaly: ", true_anomaly)
+	print("Util.subsolar_latitude: ", Util.subsolar_latitude)
+	print("Util.subsolar_lat_line_edit.text: ", Util.subsolar_lat_line_edit.text)
 
+func update_velocity_axis() -> void:
+	print("Entro in update_velocity_axis")
+	if not is_node_ready():
+		print("not is_node_ready")
+		return
+	if velocity_axis == null:
+		print("velocity_axis is null")
+		return
+	if Util.jpl_data == null or Util.jpl_data.size() == 0:
+		print("jpl_data is null or 0")
+		return
+	if current_date_index < 0 or current_date_index >= Util.jpl_data.size():
+		print("current_date_index < 0 o >jpl_data.size")
+		return
+
+	var camera: Camera3D = get_node_or_null("/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer/SubViewportContainer/SubViewport/RotatingCamera")
+	if camera == null:
+		print("camera is null")
+		return
+
+	var sky_motion_pa: float = float(Util.jpl_data[current_date_index]["sky_motion_pa"])
+	var pa_rad: float = deg_to_rad(sky_motion_pa)
+	print("sky_motion_pa: ", sky_motion_pa)
+	print("pa_rad: ", pa_rad)
+	# Assi del piano immagine:
+	# UP della camera = nord apparente
+	# RIGHT della camera = est/ovest apparente sullo schermo
+	var cam_up: Vector3 = camera.global_transform.basis.y.normalized()
+	var cam_right: Vector3 = camera.global_transform.basis.x.normalized()
+
+	# Convenzione PA astronomica:
+	# 0° = su
+	# 90° = sinistra
+	# 180° = giù
+	# 270° = destra
+	var world_dir: Vector3 = (-sin(pa_rad) * cam_right + cos(pa_rad) * cam_up).normalized()
+
+	# Conversione nel frame locale della cometa
+	var local_dir: Vector3 = global_transform.basis.inverse() * world_dir
+	local_dir = local_dir.normalized()
+	velocity_axis.set_height(mesh.height)
+	velocity_axis.set_velocity_direction(local_dir)
 
 #region switch date
 func switch_date_set_date(date: String, reset: bool = false) -> void:
+	if Util.jpl_data == null or Util.jpl_data.size() == 0:
+		return
+
 	if reset:
 		current_date_index = 0
+	else:
+		for i in range(Util.jpl_data.size()):
+			var d := str(Util.jpl_data[i]["date"])
+			var t := str(Util.jpl_data[i]["time"]).substr(0, 2) + ":00"
+			if date == d + " " + t:
+				current_date_index = i
+				break
+
 	Util.date_label.text = date
 	Util.nucleus_date_label.text = date
-	# updates all parameters based on the jpl data in that date
+
 	update_pa_incl()
 	update_lambda_beta()
 	update_i_phi()
 	update_subsolar_latitude()
-	# sun params
+	
 	Util.sun_pa_line_edit.set_value(float(Util.jpl_data[current_date_index]["sun_pa"]))
 	Util.sun_incl_line_edit.set_value(float(Util.jpl_data[current_date_index]["sto"]))
 	Util.sun_dist_line_edit.set_value(float(Util.jpl_data[current_date_index]["sun_distance_r"]))
-	# scale 
 	Util.scale_line_edit.set_value(float(Util.jpl_data[current_date_index]["delta"]))
 
-	# update coords grid labels
+	update_velocity_axis()
 	update_coordinate_grid_labels()
+	if not Util.is_simulation and animation_slider.is_stop_enabled():
+		request_reload()
+	
 ## update grid labels
 func update_coordinate_grid_labels() -> void:
 	if Util.jpl_data == null or Util.jpl_data.size() == 0:
@@ -502,12 +596,12 @@ func update_coordinate_grid_labels() -> void:
 	# 5 columns -> 4 spaces between labels
 	var fov_step := fov_deg / 4.0
 
-	Util.ra_center_label.text = "%.2f°" % ra
-	Util.dec_center_label.text = "%.2f°" % dec
-	Util.ra_left_label.text = "%.2f°" % (ra - fov_step)
-	Util.ra_right_label.text = "%.2f°" % (ra + fov_step)
-	Util.dec_left_label.text = "%.2f°" % clamp(dec - fov_step, -90, 90)
-	Util.dec_right_label.text = "%.2f°" % clamp(dec + fov_step, -90, 90)
+	Util.ra_center_label.text = "%.3f°" % ra
+	Util.dec_center_label.text = "%.3f°" % dec
+	Util.ra_left_label.text = "%.3f°" % (ra - fov_step)
+	Util.ra_right_label.text = "%.3f°" % (ra + fov_step)
+	Util.dec_left_label.text = "%.3f°" % clamp(dec - fov_step, -90, 90)
+	Util.dec_right_label.text = "%.3f°" % clamp(dec + fov_step, -90, 90)
 
 # called by CometTab._on_prev_date_btn_pressed
 func switch_date_prev_date() -> void:
@@ -544,6 +638,29 @@ func _switch_date_prev_next_date(prev_next: int, first_last: int) -> void:
 	time_str = time_str.substr(0, 2)
 	switch_date_set_date(date_str + " " + time_str + ":00")
 
+func switch_date_load_saved_date(saved_date: String) -> void:
+	if Util.jpl_data == null or Util.jpl_data.size() == 0:
+		return
+
+	for i in range(Util.jpl_data.size()):
+		var date_str: String = str(Util.jpl_data[i]["date"])
+		var time_str: String = str(Util.jpl_data[i]["time"])
+		time_str = time_str.substr(0, 2)
+		var full_date: String = date_str + " " + time_str + ":00"
+
+		if full_date == saved_date:
+			current_date_index = i
+			switch_date_set_date(full_date)
+			return
+	# Se arriviamo qui, la data non è stata trovata
+	push_warning("Data salvata non trovata nei dati JPL: " + saved_date)
+
+	# fallback sicuro: prima riga
+	var date_str_err: String = str(Util.jpl_data[0]["date"])
+	var time_str_err: String = str(Util.jpl_data[0]["time"])
+	time_str_err = time_str_err.substr(0, 2)
+	current_date_index = 0
+	switch_date_set_date(date_str_err + " " + time_str_err + ":00")
 
 #endregion switch date
 
@@ -599,3 +716,38 @@ func update_comet_orientation() -> void:
 	# debug_sphere.global_position = global_transform.origin + direction * mesh.radius * 3
 	point_y_axis_toward(global_transform.origin + direction)
 	get_tree().call_group("emitter", "update_norm")
+
+func rerun_instant_simulation_for_new_date() -> void:
+	get_tree().call_group("animation", "animation_stopped")
+	instant_simulation()
+
+
+func _on_next_btn_button_down() -> void:
+	is_holding_next = true
+	switch_date_next_date()
+	hold_start_timer.start()
+
+func _on_next_btn_button_up() -> void:
+	is_holding_next = false
+	hold_start_timer.stop()
+	repeat_timer.stop()
+
+func _on_prev_btn_button_down() -> void:
+	is_holding_prev = true
+	switch_date_prev_date()
+	hold_start_timer.start()
+
+func _on_prev_btn_button_up() -> void:
+	is_holding_prev = false
+	hold_start_timer.stop()
+	repeat_timer.stop()
+
+func _on_hold_start_timer_timeout_forward() -> void:
+	if is_holding_next or is_holding_prev:
+		repeat_timer.start()
+
+func _on_repeat_timer_timeout_forward() -> void:
+	if is_holding_next:
+		switch_date_next_date()
+	elif is_holding_prev:
+		switch_date_prev_date()

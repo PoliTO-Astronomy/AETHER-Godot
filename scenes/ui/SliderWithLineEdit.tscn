@@ -19,28 +19,30 @@ metadata/_edit_use_anchors_ = true
 [node name="Slider" type="HSlider" parent="."]
 layout_mode = 1
 anchors_preset = -1
-offset_top = 16.0
-offset_right = 160.0
-offset_bottom = 39.0
+anchor_top = 0.490291
+anchor_right = 0.666667
+anchor_bottom = 1.05412
 focus_mode = 0
 max_value = 0.0
 step = 0.01
+metadata/_edit_use_anchors_ = true
 
 [node name="Label" type="Label" parent="."]
 layout_mode = 0
-offset_right = 38.0
-offset_bottom = 31.0
+anchor_right = 0.354167
+anchor_bottom = 0.520934
+offset_right = 15.0
+offset_bottom = 3.75
 scale = Vector2(0.85, 0.85)
 text = "Ciao"
+metadata/_edit_use_anchors_ = true
 
 [node name="SanitizedEdit" parent="." node_paths=PackedStringArray("slider") instance=ExtResource("2_1k185")]
 layout_mode = 1
-anchors_preset = 0
-anchor_right = 0.0
-anchor_bottom = 0.0
-offset_left = 176.0
-offset_right = 237.013
-offset_bottom = 28.7213
+anchor_left = 0.733333
+anchor_right = 0.987554
+anchor_bottom = 0.759951
+offset_bottom = -2.2787
 text = "2.0"
 slider = NodePath("../Slider")
 
