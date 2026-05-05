@@ -30,6 +30,10 @@ func _ready() -> void:
 	line_edit.text = str(starting_value)
 	line_edit.resize_type = resize_type
 	prev_value = line_edit.text
+	if resize_type == "alpha_p" or resize_type == "delta_p":
+		slider.scrollable = false
+	if resize_type == "alpha_p" or resize_type == "delta_p":
+		slider.drag_ended.connect(_on_slider_drag_ended)
 	$Label.text = label
 	if resize_type:
 		# print("[Slider w LineEdit] update_" + resize_type + "(" + str(starting_value) + ")")
@@ -42,8 +46,13 @@ func _ready() -> void:
 func _on_slider_value_changed(value: float) -> void:
 	line_edit.text = "%.2f" % value
 
-	# print("Calling ")
+	# Per RA/Dec: NON applicare update continuo
+	if resize_type == "alpha_p" or resize_type == "delta_p":
+		return
+
+	# Default: comportamento normale per gli altri slider
 	get_tree().call_group(resize_type, "update_" + resize_type, value)
+
 
 """
 Sets the value of both line edit and slider
@@ -67,6 +76,12 @@ func reset_rotation() -> void:
 	slider.value = starting_value
 	line_edit.text = str(starting_value)
 
+func _on_slider_drag_ended(value_changed: bool) -> void:
+	if not value_changed:
+		return
+
+	# Qui scatta il "solo al click/drag finito"
+	get_tree().call_group(resize_type, "update_" + resize_type, slider.value)
 
 # func _on_sanitized_edit_text_changed(new_text: String) -> void:
 # 	if new_text.is_valid_float():

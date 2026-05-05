@@ -1,3 +1,4 @@
+
 extends Node3D
 class_name Emitter
 const RAY_LENGHT = 1000000
@@ -266,34 +267,26 @@ func instant_simulation(_n_steps: int, _angle_per_step: float, jpl_import: Dicti
 		# get_tree().call_group("sun", "update_sun_dir_rotation", start_sun_direction)
 		pass
 func _accelerate_particle2(time_alive2: int, _normal_dir: Vector3) -> Transform3D:
-	# --- 1. Get Particle-Specific Data ---
 	var new_basis := Util.orbital_basis
 	var time_passed: float = time_alive2 * Util.jet_rate * 60.0
-	# --- 2. Calculate Initial Global Velocity and Acceleration Term  in the global space ---
+
 	var global_initial_velocity: Vector3 = _normal_dir * speed
 	var sun_accel_magnitude: float = 0.5 * a * (time_passed ** 2)
-	# --- 3. Change of Basis ---
+
 	var local_velocity := global_initial_velocity * new_basis
-	# --- 4. Calculate Displacement in the new space  ---
 	var local_displacement := Vector3(local_velocity * time_passed)
 	local_displacement.x -= sun_accel_magnitude
-	# --- 5. Convert Local Displacement back to a Global Vector ---
-	var global_displacement: Vector3 = local_displacement * new_basis.transposed()
-	# --- 6. Calculate Final Global Position ---
-	var final_global_position: Vector3 = Vector3.ZERO + global_displacement
 
-	# print("Particle n°%d final position magnitude: %.10f" % [time_alive2, final_global_position.length() / 1000])
-	# print("Local Velocity: %s" % str(local_velocity))
-	# print("New basis: %s" % str(new_basis))
-	# print("_normal_dir: %s" % str(_normal_dir))
-	# print("Global initial velocity: %s" % str(global_initial_velocity))
-	# print("-------")
-	var scaled_final_pos := final_global_position / Util.scale
-	global_positions.append(scaled_final_pos)
-	# total_space[i] += (scaled_final_pos - global_positions[i]).length() # update total space travelled by the particle
-	# --- 7. Create the Final Transform and Set it ---
-	var final_global_transform := Transform3D(new_basis, scaled_final_pos)
+	var global_displacement: Vector3 = local_displacement * new_basis.transposed()
+
+	# qui la particella parte davvero dalla posizione dell’emitter
+	var scaled_displacement := global_displacement / Util.scale
+	var final_global_position: Vector3 = global_position + scaled_displacement
+
+	global_positions.append(final_global_position)
+	var final_global_transform := Transform3D(new_basis, final_global_position)
 	return final_global_transform
+	
 func _generate_diffusion_particles2(travelled_space: float, particle_origin: Vector3) -> Array[Transform3D]:
 	if Util.n_points <= 0:
 		# return # no diffusion particles to generate
@@ -369,16 +362,13 @@ func _accelerate_particle(i: int) -> void:
 	# .transposed() is used to convert the local displacement back to the global space.
 	var global_displacement: Vector3 = local_displacement * new_basis.transposed()
 	# --- 6. Calculate Final Global Position ---
-	var final_global_position: Vector3 = initial_positions[i] + global_displacement
-	# Apply your scaling factor
-	# var scaled_final_pos := final_global_position 
-	var scaled_final_pos := final_global_position / (Util.scale)
-	total_space[i] += (scaled_final_pos - global_positions[i]).length() # update total space travelled by the particle
-	global_positions[i] = scaled_final_pos
-	# add to the total space only the delta travelled by the particle
-	# total_space[i] += (global_displacement.length() / (Util.scale / 500)) # update total space travelled by the particle
-	# --- 7. Create the Final Transform and Set it ---
-	var final_global_transform := Transform3D(new_basis, scaled_final_pos)
+	var scaled_displacement := global_displacement / Util.scale
+	var final_global_position: Vector3 = initial_positions[i] + scaled_displacement
+
+	total_space[i] += (final_global_position - global_positions[i]).length()
+	global_positions[i] = final_global_position
+
+	var final_global_transform := Transform3D(new_basis, final_global_position)
 
 	# `set_instance_transform` requires the transform to be LOCAL to the MultiMeshInstance3D node.
 	# We convert our desired global transform into a local one.
@@ -412,24 +402,24 @@ func _spawn_particle(last_id: int) -> void:
 	# assign the normal direction to the particle
 	mm_emitter.multimesh.set_instance_custom_data(last_id - 1, Color(norm.x, norm.y, norm.z))
 	normal_dirs.append(norm)
-	var _initial_position := mm_emitter.global_position + norm * Util.comet_radius
-	# global_positions.append(mm_emitter.global_position + norm * Util.comet_radius)
-	global_positions.append(global_position)
-	# initial_positions.append(global_position)
+
+	var _initial_position := global_position
+
+	global_positions.append(_initial_position)
 	initial_positions.append(_initial_position)
-	time_alive.append(0) # time alive is 0 at the beginning
+	time_alive.append(0)
 	particle_speeds.append(speed)
-	total_space.append(0) # total space travelled is 0 at the beginning
+	total_space.append(0)
+
 	for i in range(Util.n_points):
-		time_alive.append(0) # time alive is 0 at the beginning for each diffusion particle
-		global_positions.append(global_position)
+		time_alive.append(0)
+		global_positions.append(_initial_position)
 		initial_positions.append(_initial_position)
 		normal_dirs.append(norm)
 		particle_speeds.append(speed)
-		total_space.append(0) # total space travelled is 0 at the beginning for each diffusion particle
-	# spawn new particle at origin
-	mm_emitter.multimesh.set_instance_transform(last_id - 1, Transform3D(Basis(Vector3.UP, Vector3.LEFT, Vector3.FORWARD), Vector3.ZERO))
+		total_space.append(0)
 
+	mm_emitter.multimesh.set_instance_transform(last_id - 1, Transform3D(Basis(Vector3.UP, Vector3.LEFT, Vector3.FORWARD), Vector3.ZERO))
 
 ## Computes acceleration(in m/s^2) based on particle density, particle radius, particle albedo, solar pressure etc
 ## It uses the following formula: a = 3\*P/(4\*d/2\*p) where
@@ -506,11 +496,18 @@ func destroy_multimesh() -> void:
 ## called when the comet is resized
 func update_position(radius: float) -> void:
 	var new_pos := Util.latlon_to_vector3(latitude, longitude, radius)
+
 	# the particle mesh is 1/25 of the comet mesh, chosen arbitrarly
 	particle_mesh.mesh.radius = radius * (1.0 / 25)
 	particle_mesh.mesh.height = particle_mesh.mesh.radius * 2
 	$ParticleMesh/ParticleArea/ParticleShape.shape.set_radius(particle_mesh.mesh.radius)
+
 	position = new_pos
+
+	# riallinea anche la normale del jet
+	update_initial_norm(latitude, longitude)
+	update_norm()
+	
 func update_speed(_speed: float) -> void:
 	if Util.PRINT_UPDATE_METHOD: print("Updated speed:%f"%_speed)
 	speed = _speed

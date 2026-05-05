@@ -5,8 +5,8 @@ extends CanvasLayer
 @onready var del_overlay_img_btn: Button = $"/root/Hud/Body/ScaleTab/Control/DelOverlayImgBtn"
 # @onready var transparency_label: Label = $"Control/TransparencyLabel"
 @onready var transparency_slider: HSlider = $"/root/Hud/Body/SimTab/Control/TransparencySlider"
-@onready var overlay_img: TextureRect = $"/root/Hud/Viewport/Panel/OverlayImg"
-@onready var sub_viewport_container: SubViewportContainer = $"/root/Hud/Viewport/SubViewportContainer"
+@onready var overlay_img: TextureRect = $"/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer/OverlayImg"
+@onready var sub_viewport_container: SubViewportContainer = $"/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer/SubViewportContainer"
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	# $Control/FrequencyEdit.set_value(1)
@@ -17,14 +17,14 @@ func _ready() -> void:
 ## Called by Navbar._on_file_explorer_file_selected()
 ## Save the data into the SaveManager.config structure
 func save_data() -> void:
-	SaveManager.config.set_value("simulation", "frequency", float($Control/FrequencyEdit/SanitizedEdit.text))
-	SaveManager.config.set_value("simulation", "num_rotations", float($Control/NumRotationEdit.text))
-	SaveManager.config.set_value("simulation", "jet_rate", float($Control/JetRateEdit.text))
-	SaveManager.config.set_value("simulation", "scale", float($Control/KmScaleEdit.text))
-	SaveManager.config.set_value("simulation", "i", float($Control/IEdit.text))
-	SaveManager.config.set_value("simulation", "phi", float($Control/PhiEdit.text))
-	SaveManager.config.set_value("simulation", "true_anomaly", float($Control/TrueAnomalyEdit.text))
-	SaveManager.config.set_value("simulation", "n_points", int($Control/NPointsEdit.text))
+	SaveManager.config.set_value("simulation", "frequency", $Control/FrequencyEdit/SanitizedEdit.text)
+	SaveManager.config.set_value("simulation", "num_rotations", $Control/NumRotationEdit.text)
+	SaveManager.config.set_value("simulation", "jet_rate", $Control/JetRateEdit.text)
+	SaveManager.config.set_value("simulation", "scale", $Control/KmScaleEdit.text)
+	SaveManager.config.set_value("simulation", "i", $Control/IEdit.text)
+	SaveManager.config.set_value("simulation", "phi", $Control/PhiEdit.text)
+	SaveManager.config.set_value("simulation", "true_anomaly", $Control/TrueAnomalyEdit.text)
+	SaveManager.config.set_value("simulation", "n_points", $Control/NPointsEdit.text)
 ## Called by Navbar._on_file_explorer_file_selected()
 ## Loads the data from the config file into the different element of the scene
 func load_data() -> void:
@@ -70,9 +70,10 @@ func _on_file_explorer_file_selected(path: String) -> void:
 
 func load_texture(path: String) -> void:
 	var img := Image.load_from_file(path)
-	img.resize(900, 900)
+	var side := int(Util.window_size)
+	img.resize(side, side)
 	overlay_img.texture = ImageTexture.create_from_image(img)
-	overlay_img.modulate.a = 0.5
+	overlay_img.modulate.a = 1
 
 func _on_del_overlay_img_btn_pressed() -> void:
 	# overlay_img_linedit.visible = false
@@ -89,7 +90,7 @@ func _on_del_overlay_img_btn_pressed() -> void:
 	sub_viewport_container.get_node("SubViewport").transparent_bg = false
 
 func _on_transparency_slider_value_changed(value: float) -> void:
-	if $"/root/Hud/Viewport/Panel/OverlayImg".texture == null:
+	if $"/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer/OverlayImg".texture == null:
 		sub_viewport_container.modulate.a = 1.0
 		return
 	sub_viewport_container.modulate.a = value

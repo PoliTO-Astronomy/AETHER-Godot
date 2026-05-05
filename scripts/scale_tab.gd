@@ -7,20 +7,25 @@ extends CanvasLayer
 @onready var fov_curr_zoom_km: LineEdit = $Control/FOVCurrZoomKmLineEdit # display fov at the current zoom
 @onready var scale_factor: LineEdit = $Control/ScaleFactorLineEdit
 @onready var arcsec_km_toggle: bool = true # false:arcsec, true:km
-
+@onready var scale_ruler: TextureRect = $"/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer/LabelControl/Scale"
 # Called when the node enters the scene tree for the first time.
-func _ready() -> void:
-	pass # Replace with function body.
+func _ready():
+	await _wait_for_valid_size()
+	update_ruler()
+
+func _wait_for_valid_size():
+	while scale_ruler.get_parent().size.x <= 0:
+		await get_tree().process_frame
 
 
 ## Called by Navbar._on_file_explorer_file_selected()
 ## Save the data into the SaveManager.config structure
 func save_data() -> void:
-	SaveManager.config.set_value("scale", "window_size", float($Control/WindowSizeEdit.text))
-	SaveManager.config.set_value("scale", "delta_au", float($Control/DeltaAUEdit.text))
-	SaveManager.config.set_value("scale", "tel_res", float($Control/TelResolutionEdit.text))
-	SaveManager.config.set_value("scale", "tel_img_size", float($Control/TelImageSizeEdit.text))
-	SaveManager.config.set_value("scale", "window_fov", float($Control/WindowFOVEdit.text))
+	SaveManager.config.set_value("scale", "window_size", $Control/WindowSizeEdit.text)
+	SaveManager.config.set_value("scale", "delta_au", $Control/DeltaAUEdit.text)
+	SaveManager.config.set_value("scale", "tel_res", $Control/TelResolutionEdit.text)
+	SaveManager.config.set_value("scale", "tel_img_size", $Control/TelImageSizeEdit.text)
+	SaveManager.config.set_value("scale", "window_fov", $Control/WindowFOVEdit.text)
 ## Called by Navbar._on_file_explorer_file_selected()
 ## Loads the data from the config file into the different element of the scene
 func load_data() -> void:
@@ -30,7 +35,8 @@ func load_data() -> void:
 	# $Control/TelImageSizeEdit.set_block_signals(true)
 	# $Control/WindowFOVEdit.set_block_signals(true)
 	# $Control/WindowSizeEdit.set_block_signals(true)
-	$Control/WindowSizeEdit.set_value(float(SaveManager.config.get_value("scale", "window_size", 900)))
+	#$Control/WindowSizeEdit.set_value(float(SaveManager.config.get_value("scale", "window_size", 900)))
+	$Control/WindowSizeEdit.text = str(Util.window_size)
 	$Control/DeltaAUEdit.set_value(float(SaveManager.config.get_value("scale", "delta_au", 0)))
 	$Control/TelResolutionEdit.set_value(float(SaveManager.config.get_value("scale", "tel_res", 0)))
 	$Control/TelImageSizeEdit.set_value(float(SaveManager.config.get_value("scale", "tel_img_size", 0)))
@@ -75,9 +81,11 @@ func update_window_fov(value: float) -> void:
 	update_scale_factor()
 
 func update_window_size(value: float) -> void:
-	if Util.PRINT_UPDATE_METHOD or true: print("Updated window_size:%f"%value)
+	if Util.PRINT_UPDATE_METHOD:
+		print("Updated window_size:%f" % value)
 	Util.window_size = value
 	update_scale_factor()
+	update_ruler()
 
 
 func update_tel_res_km_pixel() -> void:
@@ -100,7 +108,8 @@ func update_fov_km() -> void:
 	if fov_km:
 		fov_km.text = str(int(round(Util.fov_km)))
 		# 150 is the length of the ruler in pixels
-		var fov_km_ruler: float = Util.fov_km / Util.window_size * 150
+		var ruler_length := Util.window_size / 6.0
+		var fov_km_ruler: float = Util.fov_km / Util.window_size * ruler_length
 		# print("Image_size:%f ResKmPix:%f Fov_km: %f Window size: %f Fov km ruler: %f" % [Util.tel_image_size, Util.tel_res_km_pixel, Util.fov_km, Util.window_size, fov_km_ruler])
 		Util.current_fov_label.text = "%s Km" % int(round(fov_km_ruler))
 
@@ -108,11 +117,10 @@ func update_fov_km() -> void:
 func update_scale_factor() -> void:
 	var window_image_scale_factor: float = Util.tel_image_size / Util.window_size
 	# var fov_full_zoom: float = Util.window_fov / 1000 * window_image_scale_factor
-	var fov_full_zoom: float = Util.starting_visible_area / 1000 * window_image_scale_factor
-	var pixel_resolution_full_zoom: float = fov_full_zoom / Util.window_size
+#	var fov_full_zoom: float = Util.starting_visible_area / 1000 * window_image_scale_factor
+#	var pixel_resolution_full_zoom: float = fov_full_zoom / Util.window_size
 	var window_res_km_pixel := Util.visible_area / 1000 / Util.window_size
 	Util.scale = Util.tel_res_km_pixel / window_res_km_pixel * window_image_scale_factor
-	print("Tel_res_km_pixel: %f Visible_area:%f Window_res_km_pixel:%.10f Window_image_scale_factor: %f Scale: %f" % [Util.tel_res_km_pixel, Util.visible_area, window_res_km_pixel, window_image_scale_factor, Util.scale])
 	# Util.scale = Util.tel_res_km_pixel / pixel_resolution_full_zoom * window_image_scale_factor
 	
 	update_ruler()
@@ -132,7 +140,19 @@ func update_ruler() -> void:
 	
 	var zoom_factor := Util.starting_visible_area / Util.visible_area
 	var fov_km_ruler: float = Util.fov_km / zoom_factor
-	fov_km_ruler = fov_km_ruler / Util.window_size * 150 # 150 is the length of the ruler in pixels
+	var parent := scale_ruler.get_parent() as Control
+	
+	var start_x = scale_ruler.position.x
+	var max_width = scale_ruler.get_parent().size.x - start_x
+		
+	var ruler_length := Util.window_size / 6.0
+	ruler_length = clamp(ruler_length, 1.0, max_width)
+	if scale_ruler:
+		scale_ruler.custom_minimum_size.x = ruler_length
+		# oppure: scale_ruler.size.x = ruler_length_px
+		scale_ruler.size.x = ruler_length
+
+	fov_km_ruler = float(fov_km_ruler) / float(Util.window_size) * ruler_length
 	if arcsec_km_toggle:
 		Util.current_fov_label.text = "%s Km" % str(int(round(fov_km_ruler)))
 	else:

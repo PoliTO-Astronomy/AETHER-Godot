@@ -136,7 +136,7 @@ func _http_request_name_completed(_result: int, _response_code: int, _headers: P
 	# print(json_parser.data)
 	if _response_code != 200 and _response_code != 300:
 		print("Error, response code: ", _response_code)
-		Util.create_popup("Error", "Failed to retrieve designation ID:\n")
+		Util.create_popup("Error", "Errore in chiamata.\n")
 		return
 	if json_parser.data.has("error"):
 		Util.create_popup("Error", "Failed to retrieve designation ID:\n%s" % json_parser.data.error)
@@ -426,6 +426,8 @@ func populate_container(data: Variant) -> void:
 		# HEADER.erase("sky_motion")
 		HEADER.erase("sky_motion_pa")
 	Util.jpl_data = data
+	Util.sky_motion_pa = float(data[0]["sky_motion_pa"])
+	
 	var date_str: String = str(data[0]["date"])
 	var time_str: String = str(data[0]["time"])
 	# only the first 2 digits

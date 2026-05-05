@@ -79,6 +79,7 @@ func load_data() -> void:
 			# print("Adding entry" + str(new_entry.get_instance_id()))
 			# spawning an emitter at (0,0)
 			get_tree().call_group("latitude", "spawn_emitter_at", new_entry.latitude, new_entry.longitude, emitter)
+			emitter.update_position(Util.comet_radius)
 	# print("Dict after finished loading" + str(entry_emitter_dict))
 	# print("--------------------")
 	_update_scroll_container_height()
@@ -113,7 +114,8 @@ func _on_add_jet_entry_btn_pressed() -> void:
 	entry_emitter_dict.set(new_entry.get_instance_id(), emitter.get_instance_id())
 	# spawning an emitter at (0,0)
 	get_tree().call_group("latitude", "spawn_emitter_at", new_entry.latitude, new_entry.longitude, emitter)
-
+	emitter.update_position(Util.comet_radius)
+	
 func _clear_data_for_load() -> void:
 	for child: Node in content_node.get_children().duplicate():
 		var id := child.get_instance_id()

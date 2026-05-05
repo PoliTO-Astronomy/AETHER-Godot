@@ -10,7 +10,7 @@ const ALT_MULTIPLIER = 1.0 / SHIFT_MULTIPLIER
 @onready var starting_position := position
 @onready var starting_rotation := rotation
 @onready var starting_mouse_pos := Vector2(0.0, 0.0)
-@onready var sub_viewport: SubViewport = $"/root/Hud/Body/SubViewportContainer/SubViewport"
+@onready var sub_viewport: SubViewport = $"/root/Hud/Viewport/SubViewportContainer/SubViewport"
 
 @export var enabled: bool = true
 
