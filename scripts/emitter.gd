@@ -19,6 +19,7 @@ var jet_id: int
 var speed: float
 var latitude: float
 var longitude: float
+var density: int
 var diffusion: float
 var color: Color
 
@@ -288,13 +289,13 @@ func _accelerate_particle2(time_alive2: int, _normal_dir: Vector3) -> Transform3
 	return final_global_transform
 	
 func _generate_diffusion_particles2(travelled_space: float, particle_origin: Vector3) -> Array[Transform3D]:
-	if Util.n_points <= 0:
+	if density <= 0:
 		# return # no diffusion particles to generate
 		return []
 	var diffusion_particles: Array[Transform3D] = []
 	var pc_radius := travelled_space * (diffusion / 100) * randf() # pointcloud radius based on total space travelled by the particle and diffusion factor
 	# print("Radius:%f" % pc_radius)
-	for i in range(Util.n_points):
+	for i in range(density):
 		# generating a random position around the particle
 		var new_pos := Util.generate_gaussian_vector(0, 1, pc_radius)
 		diffusion_particles.append(Transform3D(Basis(), particle_origin + new_pos))
@@ -321,7 +322,7 @@ func _append_data_to_mm_buffer(buffer: PackedFloat32Array, transf: Transform3D, 
 	buffer.append(_color.a)
 func tick_optimized(_n_iteration: int) -> void:
 	# moving each particle
-	for i in range(0, mm_emitter.multimesh.visible_instance_count, Util.n_points + 1):
+	for i in range(0, mm_emitter.multimesh.visible_instance_count, density + 1):
 		## accelerating only main particles, so every Util.n_points-th particle
 		_accelerate_particle(i)
 		_generate_diffusion_particles(i)
@@ -332,7 +333,7 @@ func tick_optimized(_n_iteration: int) -> void:
 		# incrementing number of maximum drawn particles (to simulate spawning them)
 		var last_id := mm_emitter.multimesh.visible_instance_count + 1
 		if last_id < mm_emitter.multimesh.instance_count:
-			mm_emitter.multimesh.visible_instance_count = last_id + Util.n_points
+			mm_emitter.multimesh.visible_instance_count = last_id + density
 		_spawn_particle(last_id)
 	update_norm()
 
@@ -380,13 +381,13 @@ func _accelerate_particle(i: int) -> void:
 ## Generate Util.n_points diffusion particles around the current particle 
 ## It doesn't update multimesh.visible_instance_count!
 func _generate_diffusion_particles(i: int) -> void:
-	if Util.n_points <= 0:
+	if density <= 0:
 		return # no diffusion particles to generate
 	var center_particle := mm_emitter.multimesh.get_instance_transform(i)
 	var center_particle_color := mm_emitter.multimesh.get_instance_color(i)
 	var pc_radius := total_space[i] * (diffusion / 100) * randf() # pointcloud radius based on total space travelled by the particle and diffusion factor
 	# TODO: maybe use compute shader to generate the particles around the center particle
-	for j in range(1, Util.n_points + 1):
+	for j in range(1, density + 1):
 		# generating a random position around the particle
 		var new_pos := Util.generate_gaussian_vector(0, 1, pc_radius)
 		mm_emitter.multimesh.set_instance_transform(i + j, Transform3D(Basis(), center_particle.origin + new_pos))
@@ -411,7 +412,7 @@ func _spawn_particle(last_id: int) -> void:
 	particle_speeds.append(speed)
 	total_space.append(0)
 
-	for i in range(Util.n_points):
+	for i in range(density):
 		time_alive.append(0)
 		global_positions.append(_initial_position)
 		initial_positions.append(_initial_position)
@@ -461,8 +462,8 @@ func update_norm2(v: Vector3, b: Basis) -> Vector3:
 	return result.normalized()
 
 func set_number_particles(num: int) -> void:
-	if Util.n_points > 0:
-		num_particles = num * (Util.n_points + 1)
+	if density > 0:
+		num_particles = num * (density + 1)
 	else:
 		num_particles = num
 	mm_emitter.multimesh.instance_count = num_particles
@@ -526,6 +527,10 @@ func update_long(long: float) -> void:
 	position = new_pos
 	update_initial_norm(latitude, longitude)
 	# get_parent().debug_sphere.global_position = global_transform.origin + norm * 0.5 * 3
+func update_dens(_density: int) -> void:
+	if Util.PRINT_UPDATE_METHOD: print("Updated density:%d"%_density)
+	density = _density
+	pass
 func update_diff(_diffusion: float) -> void:
 	if Util.PRINT_UPDATE_METHOD: print("Updated diffusion:%f"%_diffusion)
 	diffusion = _diffusion

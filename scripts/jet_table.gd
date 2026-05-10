@@ -33,7 +33,7 @@ func save_data() -> void:
 	if SaveManager.config.has_section("jets"):
 		SaveManager.config.erase_section("jets")
 	for entry: JetEntry in content_node.get_children():
-		SaveManager.config.set_value("jets", str(entry.jet_id), [entry.speed, entry.latitude, entry.longitude, entry.diffusion, entry.color])
+		SaveManager.config.set_value("jets", str(entry.jet_id), [entry.speed, entry.latitude, entry.longitude, entry.diffusion, entry.color, entry.density])
 
 
 ## Called by Navbar._on_file_explorer_file_selected().
@@ -42,6 +42,7 @@ func load_data() -> void:
 	# first I remove all jet_entries
 	# print("Before deleting the current jet_body" + str(entry_emitter_dict))
 	_clear_data_for_load()
+	var old_global_n_points := int(SaveManager.config.get_value("simulation", "n_points", 1))
 	# print("After deleting current jet_body" + str(entry_emitter_dict))
 	if SaveManager.config.has_section("jets"):
 		var entries_to_add: PackedStringArray = SaveManager.config.get_section_keys("jets")
@@ -58,6 +59,7 @@ func load_data() -> void:
 			new_entry.speed_edit.sanitized_edit_focus_exited.connect(emitter.update_speed)
 			new_entry.latitude_edit.sanitized_edit_focus_exited.connect(emitter.update_lat)
 			new_entry.longitude_edit.sanitized_edit_focus_exited.connect(emitter.update_long)
+			new_entry.density_edit.sanitized_edit_focus_exited.connect(emitter.update_dens)
 			new_entry.diffusion_edit.sanitized_edit_focus_exited.connect(emitter.update_diff)
 			new_entry.color_edit.color_changed.connect(emitter.update_color)
 
@@ -67,9 +69,18 @@ func load_data() -> void:
 			new_entry.set_diffusion(loaded_entry[3])
 			new_entry.set_color(loaded_entry[4])
 			
+			var loaded_n_points := old_global_n_points
+			print("Old density n/step: ", loaded_n_points)
+			if loaded_entry.size() > 5:
+				loaded_n_points = loaded_entry[5]
+			new_entry.set_density(loaded_n_points)
+			print("density n/step: ", loaded_n_points)
+			
+			print("Entry density n/step: ", new_entry.density)
 			emitter.speed = new_entry.speed
 			emitter.latitude = new_entry.latitude
 			emitter.longitude = new_entry.longitude
+			emitter.density = new_entry.density
 			emitter.diffusion = new_entry.diffusion
 			emitter.color = new_entry.color
 			emitter.jet_id = new_entry.jet_id
@@ -105,6 +116,7 @@ func _on_add_jet_entry_btn_pressed() -> void:
 	new_entry.speed_edit.sanitized_edit_focus_exited.connect(emitter.update_speed)
 	new_entry.latitude_edit.sanitized_edit_focus_exited.connect(emitter.update_lat)
 	new_entry.longitude_edit.sanitized_edit_focus_exited.connect(emitter.update_long)
+	new_entry.density_edit.sanitized_edit_focus_exited.connect(emitter.update_dens)
 	new_entry.diffusion_edit.sanitized_edit_focus_exited.connect(emitter.update_diff)
 	new_entry.color_edit.color_changed.connect(emitter.update_color)
 	# updating color

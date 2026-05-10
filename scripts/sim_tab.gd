@@ -19,26 +19,26 @@ func _ready() -> void:
 func save_data() -> void:
 	SaveManager.config.set_value("simulation", "frequency", $Control/FrequencyEdit/SanitizedEdit.text)
 	SaveManager.config.set_value("simulation", "num_rotations", $Control/NumRotationEdit.text)
-	SaveManager.config.set_value("simulation", "jet_rate", $Control/JetRateEdit.text)
+	SaveManager.config.set_value("simulation", "jet_rate", $"../JetsTab/Control/JetRateEdit".text)
 	SaveManager.config.set_value("simulation", "scale", $Control/KmScaleEdit.text)
 	SaveManager.config.set_value("simulation", "i", $Control/IEdit.text)
 	SaveManager.config.set_value("simulation", "phi", $Control/PhiEdit.text)
 	SaveManager.config.set_value("simulation", "true_anomaly", $Control/TrueAnomalyEdit.text)
-	SaveManager.config.set_value("simulation", "n_points", $Control/NPointsEdit.text)
+	#SaveManager.config.set_value("simulation", "n_points", $Control/NPointsEdit.text)
 ## Called by Navbar._on_file_explorer_file_selected()
 ## Loads the data from the config file into the different element of the scene
 func load_data() -> void:
 	$Control/FrequencyEdit.set_value(float(SaveManager.config.get_value("simulation", "frequency", 0)))
 	$Control/NumRotationEdit.set_value(float(SaveManager.config.get_value("simulation", "num_rotations", 0)))
-	$Control/JetRateEdit.set_value(float(SaveManager.config.get_value("simulation", "jet_rate", 0)))
+	$"../JetsTab/Control/JetRateEdit".set_value(float(SaveManager.config.get_value("simulation", "jet_rate", 0)))
 	$Control/KmScaleEdit.set_value(float(SaveManager.config.get_value("simulation", "scale", 0)))
 
-	$Control/NPointsEdit.set_value(int(SaveManager.config.get_value("simulation", "n_points", 1)))
+	#$Control/NPointsEdit.set_value(int(SaveManager.config.get_value("simulation", "n_points", 1)))
 
 
-func update_n_points(value: float) -> void:
-	if Util.PRINT_UPDATE_METHOD or true: print("Updated n_points:%f"%value)
-	Util.n_points = int(value)
+#func update_n_points(value: float) -> void:
+#	if Util.PRINT_UPDATE_METHOD or true: print("Updated n_points:%f"%value)
+#	Util.n_points = int(value)
 
 func _on_overlay_img_chosen() -> void:
 	print("lol")
