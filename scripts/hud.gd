@@ -1,8 +1,13 @@
 extends CanvasLayer
 class_name HUD
 
+@onready var help_ita = $Body/HelpPanel/HelpContentPanel/CometPanel/HelpIta
+@onready var help_eng = $Body/HelpPanel/HelpContentPanel/CometPanel/HelpEng
+@onready var button_ita = $Body/HelpPanel/HelpContentPanel/CometPanel/ButtonIta
+@onready var button_eng = $Body/HelpPanel/HelpContentPanel/CometPanel/ButtonEng
 func _ready() -> void:
 	call_deferred("setup_tab_order")
+	call_deferred("_on_ita_pressed")
 	
 func setup_tab_order() -> void:
 	var controls := []
@@ -39,3 +44,16 @@ func _collect_focusable(node: Node, arr: Array) -> void:
 				arr.append(c)
 
 		_collect_focusable(c, arr)
+		
+		
+func _on_ita_pressed():
+	help_ita.show()
+	button_ita.hide()
+	help_eng.hide()
+	button_eng.show()
+
+func _on_eng_pressed():
+	help_ita.hide()
+	button_ita.show()
+	help_eng.show()
+	button_eng.hide()

@@ -120,7 +120,7 @@ func _on_help_btn_pressed() -> void:
 	if $JPLTab.visible:
 		$JPLTab.visible = false
 	$HelpPanel.visible = not $HelpPanel.visible
-
+	
 func _on_scale_btn_pressed() -> void:
 	if $CometTab.visible:
 		$CometTab.visible = false
@@ -417,9 +417,13 @@ func _on_settings_btn_pressed() -> void:
 	var model_tab_nodes := get_tree().get_nodes_in_group("model_tab")
 	for node in model_tab_nodes:
 		node.visible = false
+	var help_tab_nodes := get_tree().get_nodes_in_group("help_tab")
+	for node in help_tab_nodes:
+		node.visible = false
 	var settings_tab_nodes := get_tree().get_nodes_in_group("settings_tab")
 	for node in settings_tab_nodes:
 		node.visible = true
+	
 
 
 func _on_model_btn_pressed() -> void:
@@ -433,29 +437,52 @@ func _on_model_btn_pressed() -> void:
 	var settings_tab_nodes := get_tree().get_nodes_in_group("settings_tab")
 	for node in settings_tab_nodes:
 		node.visible = false
+	var help_tab_nodes := get_tree().get_nodes_in_group("help_tab")
+	for node in help_tab_nodes:
+		node.visible = false
+		
+func _on_help_node_btn_pressed() -> void:
+	if not $Navbar/HelpBtn.button_pressed:
+		return
+	print("Enabling model tab, disabling settings tab")
+	$Navbar/HelpBtn.button_pressed = false
+	var model_tab_nodes := get_tree().get_nodes_in_group("model_tab")
+	for node in model_tab_nodes:
+		node.visible = false
+	var settings_tab_nodes := get_tree().get_nodes_in_group("settings_tab")
+	for node in settings_tab_nodes:
+		node.visible = false
+	var help_tab_nodes := get_tree().get_nodes_in_group("help_tab")
+	for node in help_tab_nodes:
+		node.visible = true
+
 func _on_navbar_tab_changed(tab: int) -> void:
 	var model_tab_nodes := get_tree().get_nodes_in_group("model_tab")
 	var settings_tab_nodes := get_tree().get_nodes_in_group("settings_tab")
-	var help_tab := $"/root/Hud/Body/HelpPanel"
+	var help_tab_nodes := get_tree().get_nodes_in_group("help_tab")
+	print(tab)
 	match tab:
 		0:
 			for node in model_tab_nodes:
 				node.visible = false
 			for node in settings_tab_nodes:
 				node.visible = true
-			help_tab.visible = false
+			for node in help_tab_nodes:
+				node.visible = false
 		1:
 			for node in model_tab_nodes:
 				node.visible = true
 			for node in settings_tab_nodes:
 				node.visible = false
-			help_tab.visible = false
+			for node in help_tab_nodes:
+				node.visible = false
 		2:
 			for node in model_tab_nodes:
 				node.visible = false
 			for node in settings_tab_nodes:
 				node.visible = false
-			help_tab.visible = true
+			for node in help_tab_nodes:
+				node.visible = true
 
 
 func _on_toggle_date_btn_pressed() -> void:
