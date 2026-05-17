@@ -502,6 +502,7 @@ metadata/_edit_use_anchors_ = true
 
 [node name="CometTab" type="CanvasLayer" parent="Body" groups=["alpha_p", "delta_p", "load", "model_tab", "save", "switch_date"]]
 layer = 3
+visible = false
 script = ExtResource("3_136eg")
 
 [node name="Control" type="Control" parent="Body/CometTab"]
@@ -1309,6 +1310,7 @@ wait_time = 0.15
 
 [node name="JetsTab" type="CanvasLayer" parent="Body" groups=["model_tab"]]
 layer = 3
+visible = false
 
 [node name="Control" type="Control" parent="Body/JetsTab"]
 z_index = 1
@@ -1491,6 +1493,7 @@ metadata/_edit_use_anchors_ = true
 
 [node name="SimTab" type="CanvasLayer" parent="Body" groups=["i", "load", "model_tab", "n_points", "phi", "save", "true_anomaly"]]
 layer = 3
+visible = false
 script = ExtResource("7_h022r")
 
 [node name="Control" type="Control" parent="Body/SimTab"]
@@ -1815,6 +1818,7 @@ metadata/_edit_use_anchors_ = true
 
 [node name="ScaleTab" type="CanvasLayer" parent="Body" groups=["camera", "delta_au", "load", "model_tab", "save", "tel_image_size", "tel_resolution", "window_fov", "window_size"]]
 layer = 3
+visible = false
 script = ExtResource("9_0h1do")
 
 [node name="Control" type="Control" parent="Body/ScaleTab"]
@@ -2133,7 +2137,6 @@ metadata/_edit_use_anchors_ = true
 
 [node name="JPLTab" type="CanvasLayer" parent="Body" groups=["alpha_p", "delta_p", "settings_tab", "step_size"]]
 layer = 3
-visible = false
 script = ExtResource("16_gmc6u")
 
 [node name="Control" type="Control" parent="Body/JPLTab"]
@@ -2928,6 +2931,7 @@ text = "Time:"
 
 [node name="Viewport" type="CanvasLayer" parent="." groups=["model_tab"]]
 layer = 2
+visible = false
 
 [node name="NucleusPanelRect" type="Panel" parent="Viewport"]
 anchors_preset = -1
@@ -3038,7 +3042,7 @@ metadata/_edit_use_anchors_ = true
 [node name="SubViewport" type="SubViewport" parent="Viewport/Panel/CoordinateGrid/AspectRatioContainer/SubViewportContainer" node_paths=PackedStringArray("_fr_camera", "_rot_camera") groups=["camera"]]
 handle_input_locally = false
 size = Vector2i(900, 900)
-render_target_update_mode = 4
+render_target_update_mode = 0
 script = ExtResource("9_4jqwt")
 _fr_camera = NodePath("FreeRoamCamera")
 _rot_camera = NodePath("RotatingCamera")
@@ -3204,7 +3208,7 @@ metadata/_edit_use_anchors_ = true
 [node name="SubViewport" type="SubViewport" parent="Viewport/MiniViewportContainer"]
 handle_input_locally = false
 size = Vector2i(300, 300)
-render_target_update_mode = 4
+render_target_update_mode = 0
 
 [node name="MiniCamera" type="Camera3D" parent="Viewport/MiniViewportContainer/SubViewport" groups=["camera", "radius"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 11.8985)
