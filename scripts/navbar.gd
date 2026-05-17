@@ -16,6 +16,7 @@ extends CanvasLayer
 
 const MIN_VP_SIDE := 256
 var alpha_check: CheckBox
+var overlay_check: CheckBox
 
 ## Called when the node enters the scene tree for the first time.
 func _ready() -> void:
@@ -39,9 +40,14 @@ func _ready() -> void:
 	alpha_check = CheckBox.new()
 	alpha_check.text = "Save with transparent background (alpha)"
 	alpha_check.button_pressed = true  # default consigliato
+	
+	overlay_check = CheckBox.new()
+	overlay_check.text = "Save with nucleus preview overlay"
+	overlay_check.button_pressed = true  # default consigliato
 
 	# 👇 QUESTA È LA RIGA CHIAVE
 	file_explorer.get_vbox().add_child(alpha_check)
+	file_explorer.get_vbox().add_child(overlay_check)
 
 	if not file_explorer.file_selected.is_connected(_on_file_explorer_file_selected):
 		file_explorer.file_selected.connect(_on_file_explorer_file_selected)
@@ -257,8 +263,9 @@ func _on_file_explorer_file_selected(path: String) -> void:
 		#	print("Screenshot saved to: ", path, " alpha=", want_alpha)
 		if file_explorer.get_meta("is_screenshot", false):
 			var want_alpha := alpha_check != null and alpha_check.button_pressed
+			var want_overlay := overlay_check != null and overlay_check.button_pressed
 
-			var img := await screenshot_composited_with_overlays(rot_camera_viewport, want_alpha)
+			var img := await screenshot_composited_with_overlays(rot_camera_viewport, want_alpha, want_overlay)
 
 			img.resize(1200, 1200)
 			img.convert(Image.FORMAT_RGBA8)
@@ -536,7 +543,7 @@ func update_save_load_buttons() -> void:
 		disable_btn("SaveBtn")
 		disable_btn("LoadBtn")
 
-func screenshot_composited_with_overlays(vp: SubViewport, want_alpha: bool) -> Image:
+func screenshot_composited_with_overlays(vp: SubViewport, want_alpha: bool, include_nucleus_preview: bool) -> Image:
 	var base: Image = await screenshot_subviewport(vp, want_alpha)
 	var overlays: Image = await capture_overlays_with_alpha()
 
@@ -547,7 +554,8 @@ func screenshot_composited_with_overlays(vp: SubViewport, want_alpha: bool) -> I
 	out.blit_rect(base, Rect2i(0, 0, base.get_width(), base.get_height()), Vector2i.ZERO)
 	out.blend_rect(overlays, Rect2i(0, 0, overlays.get_width(), overlays.get_height()), Vector2i.ZERO)
 
-	await _draw_nucleus_preview_on_screenshot(out)
+	if include_nucleus_preview:
+		await _draw_nucleus_preview_on_screenshot(out)
 
 	return out
 
