@@ -96,7 +96,7 @@ func _ready() -> void:
 	_velocity_axis.add_to_group("toggle_axis")
 	_velocity_axis.set_axis_type(AxisArrow.AXIS_TYPE.VELOCITY)
 	_velocity_axis.set_height(mesh.height)
-	_velocity_axis.visible = false
+	_velocity_axis.visible = true
 	velocity_axis = _velocity_axis
 	
 	x_axis = _x_axis

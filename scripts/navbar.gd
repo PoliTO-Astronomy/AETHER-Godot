@@ -547,6 +547,8 @@ func screenshot_composited_with_overlays(vp: SubViewport, want_alpha: bool) -> I
 	out.blit_rect(base, Rect2i(0, 0, base.get_width(), base.get_height()), Vector2i.ZERO)
 	out.blend_rect(overlays, Rect2i(0, 0, overlays.get_width(), overlays.get_height()), Vector2i.ZERO)
 
+	await _draw_nucleus_preview_on_screenshot(out)
+
 	return out
 
 
@@ -711,3 +713,88 @@ func screenshot_rect(global_rect: Rect2) -> Image:
 	ri.size.y = clamp(ri.size.y, 1, img.get_height() - ri.position.y)
 
 	return img.get_region(ri)
+
+func _draw_filled_rect(img: Image, rect: Rect2i, color: Color) -> void:
+	for y in range(rect.position.y, rect.position.y + rect.size.y):
+		for x in range(rect.position.x, rect.position.x + rect.size.x):
+			if x >= 0 and y >= 0 and x < img.get_width() and y < img.get_height():
+				var old := img.get_pixel(x, y)
+				img.set_pixel(x, y, old.lerp(color, color.a))
+
+func _draw_nucleus_preview_on_screenshot(img: Image) -> void:
+	var preview: Image = await screenshot_subviewport(minicamera_viewport, true)
+
+	if preview == null or preview.is_empty():
+		return
+
+	preview.convert(Image.FORMAT_RGBA8)
+
+	# Elimina lo sfondo nero del mini viewport.
+	_make_black_transparent(preview, 0.06)
+
+	# Ritaglia il contenuto utile: nucleo + frecce.
+	preview = _crop_visible_pixels(preview, 8)
+
+	if preview == null or preview.is_empty():
+		return
+
+	var target_w: int = int(img.get_width() * 0.13)
+	var target_h: int = int(float(preview.get_height()) * float(target_w) / float(preview.get_width()))
+
+	preview.resize(target_w, target_h, Image.INTERPOLATE_LANCZOS)
+
+	var margin: int = int(img.get_width() * 0.025)
+	var pos: Vector2i = Vector2i(
+		img.get_width() - target_w - margin,
+		margin
+	)
+
+	img.blend_rect(
+		preview,
+		Rect2i(0, 0, preview.get_width(), preview.get_height()),
+		pos
+	)
+
+func _make_black_transparent(img: Image, threshold: float) -> void:
+	img.convert(Image.FORMAT_RGBA8)
+
+	for y in range(img.get_height()):
+		for x in range(img.get_width()):
+			var c: Color = img.get_pixel(x, y)
+
+			if c.r <= threshold and c.g <= threshold and c.b <= threshold:
+				img.set_pixel(x, y, Color(c.r, c.g, c.b, 0.0))
+
+
+func _crop_visible_pixels(img: Image, padding: int) -> Image:
+	var min_x: int = img.get_width()
+	var min_y: int = img.get_height()
+	var max_x: int = -1
+	var max_y: int = -1
+
+	for y in range(img.get_height()):
+		for x in range(img.get_width()):
+			var c: Color = img.get_pixel(x, y)
+
+			if c.a > 0.05:
+				min_x = min(min_x, x)
+				min_y = min(min_y, y)
+				max_x = max(max_x, x)
+				max_y = max(max_y, y)
+
+	if max_x < 0 or max_y < 0:
+		return img
+
+	min_x = max(0, min_x - padding)
+	min_y = max(0, min_y - padding)
+	max_x = min(img.get_width() - 1, max_x + padding)
+	max_y = min(img.get_height() - 1, max_y + padding)
+
+	var rect := Rect2i(
+		min_x,
+		min_y,
+		max_x - min_x + 1,
+		max_y - min_y + 1
+	)
+
+	return img.get_region(rect)
