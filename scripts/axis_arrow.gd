@@ -114,3 +114,14 @@ func set_velocity_direction(direction: Vector3) -> void:
 	# ma il nodo resta centrato sulla cometa.
 	position = Vector3.ZERO
 	quaternion = Quaternion(Vector3.UP, dir).normalized()
+
+func set_velocity_direction_world(center: Vector3, direction: Vector3) -> void:
+	if direction.length_squared() < 1e-12:
+		return
+
+	var dir := direction.normalized()
+
+	var t := global_transform
+	t.origin = center
+	t.basis = Basis(Quaternion(Vector3.UP, dir).normalized())
+	global_transform = t

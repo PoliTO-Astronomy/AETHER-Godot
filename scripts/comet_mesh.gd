@@ -35,7 +35,7 @@ var frequency: float = 0
 var freq_sped_up: float = 0
 
 const EARTH_VIEW = Vector3(0.0, 0.0, 10.0)
-
+var velocity_world_dir: Vector3 = Vector3.ZERO
 
 var axis_scene := preload("res://scenes/axis_arrow.tscn")
 var emitter_scene := preload("res://scenes/particle_emitter.tscn")
@@ -162,7 +162,9 @@ func tick(n_iteration: int) -> void:
 	animation_slider.tick()
 	var _bas := transform.basis
 	rotate_object_local(Vector3.UP, deg_to_rad(angle_per_step))
-
+	# Qui NON ricalcolo dai JPL/camera.
+	# Compenso solo la rotazione della cometa.
+	apply_velocity_axis_from_world_dir()
 
 ## Instant simulation. Basically it spawns all particles at once, without any delay.
 ## Then it computes the final position of each particle
@@ -506,45 +508,38 @@ func update_subsolar_latitude() -> void:
 	print("Util.subsolar_lat_line_edit.text: ", Util.subsolar_lat_line_edit.text)
 
 func update_velocity_axis() -> void:
-	print("Entro in update_velocity_axis")
 	if not is_node_ready():
-		print("not is_node_ready")
 		return
 	if velocity_axis == null:
-		print("velocity_axis is null")
 		return
 	if Util.jpl_data == null or Util.jpl_data.size() == 0:
-		print("jpl_data is null or 0")
 		return
 	if current_date_index < 0 or current_date_index >= Util.jpl_data.size():
-		print("current_date_index < 0 o >jpl_data.size")
 		return
 
 	var camera: Camera3D = get_node_or_null("/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer/SubViewportContainer/SubViewport/RotatingCamera")
 	if camera == null:
-		print("camera is null")
 		return
 
 	var sky_motion_pa: float = float(Util.jpl_data[current_date_index]["sky_motion_pa"])
 	var pa_rad: float = deg_to_rad(sky_motion_pa)
-	print("sky_motion_pa: ", sky_motion_pa)
-	print("pa_rad: ", pa_rad)
-	# Assi del piano immagine:
-	# UP della camera = nord apparente
-	# RIGHT della camera = est/ovest apparente sullo schermo
+
 	var cam_up: Vector3 = camera.global_transform.basis.y.normalized()
 	var cam_right: Vector3 = camera.global_transform.basis.x.normalized()
 
-	# Convenzione PA astronomica:
-	# 0° = su
-	# 90° = sinistra
-	# 180° = giù
-	# 270° = destra
-	var world_dir: Vector3 = (-sin(pa_rad) * cam_right + cos(pa_rad) * cam_up).normalized()
+	velocity_world_dir = (-sin(pa_rad) * cam_right + cos(pa_rad) * cam_up).normalized()
 
-	# Conversione nel frame locale della cometa
-	var local_dir: Vector3 = global_transform.basis.inverse() * world_dir
+	apply_velocity_axis_from_world_dir()
+
+func apply_velocity_axis_from_world_dir() -> void:
+	if velocity_axis == null:
+		return
+	if velocity_world_dir.length_squared() < 1e-12:
+		return
+
+	var local_dir: Vector3 = global_transform.basis.inverse() * velocity_world_dir
 	local_dir = local_dir.normalized()
+
 	velocity_axis.set_height(mesh.height)
 	velocity_axis.set_velocity_direction(local_dir)
 
