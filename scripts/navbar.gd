@@ -16,6 +16,7 @@ extends CanvasLayer
 
 const MIN_VP_SIDE := 256
 var alpha_check: CheckBox
+var overlay_check: CheckBox
 
 ## Called when the node enters the scene tree for the first time.
 func _ready() -> void:
@@ -39,9 +40,14 @@ func _ready() -> void:
 	alpha_check = CheckBox.new()
 	alpha_check.text = "Save with transparent background (alpha)"
 	alpha_check.button_pressed = true  # default consigliato
+	
+	overlay_check = CheckBox.new()
+	overlay_check.text = "Save with nucleus preview overlay"
+	overlay_check.button_pressed = true  # default consigliato
 
 	# 👇 QUESTA È LA RIGA CHIAVE
 	file_explorer.get_vbox().add_child(alpha_check)
+	file_explorer.get_vbox().add_child(overlay_check)
 
 	if not file_explorer.file_selected.is_connected(_on_file_explorer_file_selected):
 		file_explorer.file_selected.connect(_on_file_explorer_file_selected)
@@ -120,7 +126,7 @@ func _on_help_btn_pressed() -> void:
 	if $JPLTab.visible:
 		$JPLTab.visible = false
 	$HelpPanel.visible = not $HelpPanel.visible
-
+	
 func _on_scale_btn_pressed() -> void:
 	if $CometTab.visible:
 		$CometTab.visible = false
@@ -257,8 +263,9 @@ func _on_file_explorer_file_selected(path: String) -> void:
 		#	print("Screenshot saved to: ", path, " alpha=", want_alpha)
 		if file_explorer.get_meta("is_screenshot", false):
 			var want_alpha := alpha_check != null and alpha_check.button_pressed
+			var want_overlay := overlay_check != null and overlay_check.button_pressed
 
-			var img := await screenshot_composited_with_overlays(rot_camera_viewport, want_alpha)
+			var img := await screenshot_composited_with_overlays(rot_camera_viewport, want_alpha, want_overlay)
 
 			img.resize(1200, 1200)
 			img.convert(Image.FORMAT_RGBA8)
@@ -417,9 +424,13 @@ func _on_settings_btn_pressed() -> void:
 	var model_tab_nodes := get_tree().get_nodes_in_group("model_tab")
 	for node in model_tab_nodes:
 		node.visible = false
+	var help_tab_nodes := get_tree().get_nodes_in_group("help_tab")
+	for node in help_tab_nodes:
+		node.visible = false
 	var settings_tab_nodes := get_tree().get_nodes_in_group("settings_tab")
 	for node in settings_tab_nodes:
 		node.visible = true
+	
 
 
 func _on_model_btn_pressed() -> void:
@@ -433,29 +444,52 @@ func _on_model_btn_pressed() -> void:
 	var settings_tab_nodes := get_tree().get_nodes_in_group("settings_tab")
 	for node in settings_tab_nodes:
 		node.visible = false
+	var help_tab_nodes := get_tree().get_nodes_in_group("help_tab")
+	for node in help_tab_nodes:
+		node.visible = false
+		
+func _on_help_node_btn_pressed() -> void:
+	if not $Navbar/HelpBtn.button_pressed:
+		return
+	print("Enabling model tab, disabling settings tab")
+	$Navbar/HelpBtn.button_pressed = false
+	var model_tab_nodes := get_tree().get_nodes_in_group("model_tab")
+	for node in model_tab_nodes:
+		node.visible = false
+	var settings_tab_nodes := get_tree().get_nodes_in_group("settings_tab")
+	for node in settings_tab_nodes:
+		node.visible = false
+	var help_tab_nodes := get_tree().get_nodes_in_group("help_tab")
+	for node in help_tab_nodes:
+		node.visible = true
+
 func _on_navbar_tab_changed(tab: int) -> void:
 	var model_tab_nodes := get_tree().get_nodes_in_group("model_tab")
 	var settings_tab_nodes := get_tree().get_nodes_in_group("settings_tab")
-	var help_tab := $"/root/Hud/Body/HelpPanel"
+	var help_tab_nodes := get_tree().get_nodes_in_group("help_tab")
+	print(tab)
 	match tab:
 		0:
 			for node in model_tab_nodes:
 				node.visible = false
 			for node in settings_tab_nodes:
 				node.visible = true
-			help_tab.visible = false
+			for node in help_tab_nodes:
+				node.visible = false
 		1:
 			for node in model_tab_nodes:
 				node.visible = true
 			for node in settings_tab_nodes:
 				node.visible = false
-			help_tab.visible = false
+			for node in help_tab_nodes:
+				node.visible = false
 		2:
 			for node in model_tab_nodes:
 				node.visible = false
 			for node in settings_tab_nodes:
 				node.visible = false
-			help_tab.visible = true
+			for node in help_tab_nodes:
+				node.visible = true
 
 
 func _on_toggle_date_btn_pressed() -> void:
@@ -509,7 +543,7 @@ func update_save_load_buttons() -> void:
 		disable_btn("SaveBtn")
 		disable_btn("LoadBtn")
 
-func screenshot_composited_with_overlays(vp: SubViewport, want_alpha: bool) -> Image:
+func screenshot_composited_with_overlays(vp: SubViewport, want_alpha: bool, include_nucleus_preview: bool) -> Image:
 	var base: Image = await screenshot_subviewport(vp, want_alpha)
 	var overlays: Image = await capture_overlays_with_alpha()
 
@@ -519,6 +553,9 @@ func screenshot_composited_with_overlays(vp: SubViewport, want_alpha: bool) -> I
 	var out: Image = Image.create(base.get_width(), base.get_height(), false, Image.FORMAT_RGBA8)
 	out.blit_rect(base, Rect2i(0, 0, base.get_width(), base.get_height()), Vector2i.ZERO)
 	out.blend_rect(overlays, Rect2i(0, 0, overlays.get_width(), overlays.get_height()), Vector2i.ZERO)
+
+	if include_nucleus_preview:
+		await _draw_nucleus_preview_on_screenshot(out)
 
 	return out
 
@@ -684,3 +721,88 @@ func screenshot_rect(global_rect: Rect2) -> Image:
 	ri.size.y = clamp(ri.size.y, 1, img.get_height() - ri.position.y)
 
 	return img.get_region(ri)
+
+func _draw_filled_rect(img: Image, rect: Rect2i, color: Color) -> void:
+	for y in range(rect.position.y, rect.position.y + rect.size.y):
+		for x in range(rect.position.x, rect.position.x + rect.size.x):
+			if x >= 0 and y >= 0 and x < img.get_width() and y < img.get_height():
+				var old := img.get_pixel(x, y)
+				img.set_pixel(x, y, old.lerp(color, color.a))
+
+func _draw_nucleus_preview_on_screenshot(img: Image) -> void:
+	var preview: Image = await screenshot_subviewport(minicamera_viewport, true)
+
+	if preview == null or preview.is_empty():
+		return
+
+	preview.convert(Image.FORMAT_RGBA8)
+
+	# Elimina lo sfondo nero del mini viewport.
+	_make_black_transparent(preview, 0.06)
+
+	# Ritaglia il contenuto utile: nucleo + frecce.
+	preview = _crop_visible_pixels(preview, 8)
+
+	if preview == null or preview.is_empty():
+		return
+
+	var target_w: int = int(img.get_width() * 0.13)
+	var target_h: int = int(float(preview.get_height()) * float(target_w) / float(preview.get_width()))
+
+	preview.resize(target_w, target_h, Image.INTERPOLATE_LANCZOS)
+
+	var margin: int = int(img.get_width() * 0.025)
+	var pos: Vector2i = Vector2i(
+		img.get_width() - target_w - margin,
+		margin
+	)
+
+	img.blend_rect(
+		preview,
+		Rect2i(0, 0, preview.get_width(), preview.get_height()),
+		pos
+	)
+
+func _make_black_transparent(img: Image, threshold: float) -> void:
+	img.convert(Image.FORMAT_RGBA8)
+
+	for y in range(img.get_height()):
+		for x in range(img.get_width()):
+			var c: Color = img.get_pixel(x, y)
+
+			if c.r <= threshold and c.g <= threshold and c.b <= threshold:
+				img.set_pixel(x, y, Color(c.r, c.g, c.b, 0.0))
+
+
+func _crop_visible_pixels(img: Image, padding: int) -> Image:
+	var min_x: int = img.get_width()
+	var min_y: int = img.get_height()
+	var max_x: int = -1
+	var max_y: int = -1
+
+	for y in range(img.get_height()):
+		for x in range(img.get_width()):
+			var c: Color = img.get_pixel(x, y)
+
+			if c.a > 0.05:
+				min_x = min(min_x, x)
+				min_y = min(min_y, y)
+				max_x = max(max_x, x)
+				max_y = max(max_y, y)
+
+	if max_x < 0 or max_y < 0:
+		return img
+
+	min_x = max(0, min_x - padding)
+	min_y = max(0, min_y - padding)
+	max_x = min(img.get_width() - 1, max_x + padding)
+	max_y = min(img.get_height() - 1, max_y + padding)
+
+	var rect := Rect2i(
+		min_x,
+		min_y,
+		max_x - min_x + 1,
+		max_y - min_y + 1
+	)
+
+	return img.get_region(rect)

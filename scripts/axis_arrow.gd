@@ -20,7 +20,7 @@ func _ready() -> void:
 	#set_height(height)
 
 func set_axis_type(type: AXIS_TYPE) -> void:
-	const ALPHA: float = 0.4
+	const ALPHA: float = 0.95
 	axis_type = type
 	match axis_type:
 		AXIS_TYPE.X: # pitch axis
@@ -63,7 +63,7 @@ func set_axis_type(type: AXIS_TYPE) -> void:
 			pass
 		AXIS_TYPE.VELOCITY:
 			position = Vector3.ZERO
-			var vel_color := Color(0.35, 0.85, 1.0, ALPHA)
+			var vel_color := Color(0.0, 0.75, 1.0, ALPHA)
 			arrow_arm.get_surface_override_material(0).albedo_color = vel_color
 			arrow_head.get_surface_override_material(0).albedo_color = vel_color
 			pass
@@ -73,8 +73,11 @@ func set_height(value: float, distance: float = 0) -> void:
 	if is_node_ready():
 		# scaling arrow arm
 		var required_y_scale := (height / _original_arm_mesh_height)
-		arrow_arm.scale = Vector3(required_y_scale, required_y_scale, required_y_scale)
-		arrow_head.scale = Vector3(required_y_scale, required_y_scale, required_y_scale)
+		var thickness_scale := 1.8
+		arrow_arm.scale = Vector3(required_y_scale * thickness_scale, required_y_scale, required_y_scale * thickness_scale)
+		arrow_head.scale = Vector3(required_y_scale * 1.4, required_y_scale * 1.4, required_y_scale * 1.4)
+		#arrow_arm.scale = Vector3(required_y_scale, required_y_scale, required_y_scale)
+		#arrow_head.scale = Vector3(required_y_scale, required_y_scale, required_y_scale)
 		# offsetting by the original height(which is 2 so 2/4 = 0.5) so that the arm is centered in the center of the mesh
 		match axis_type:
 			AXIS_TYPE.SUN:
@@ -111,3 +114,14 @@ func set_velocity_direction(direction: Vector3) -> void:
 	# ma il nodo resta centrato sulla cometa.
 	position = Vector3.ZERO
 	quaternion = Quaternion(Vector3.UP, dir).normalized()
+
+func set_velocity_direction_world(center: Vector3, direction: Vector3) -> void:
+	if direction.length_squared() < 1e-12:
+		return
+
+	var dir := direction.normalized()
+
+	var t := global_transform
+	t.origin = center
+	t.basis = Basis(Quaternion(Vector3.UP, dir).normalized())
+	global_transform = t

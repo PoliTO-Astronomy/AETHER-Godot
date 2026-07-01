@@ -8,6 +8,7 @@ var emitter_scene := preload("res://scenes/particle_emitter.tscn")
 var speed_edit: SanitizedEdit
 var latitude_edit: SanitizedEdit
 var longitude_edit: SanitizedEdit
+var density_edit: SanitizedEdit
 var diffusion_edit: SanitizedEdit
 var color_edit: ColorPickerButton
 
@@ -25,6 +26,10 @@ var longitude: float = 0:
 	get:
 		return longitude_edit.property_value
 var prev_long: float = 0
+var density: float = 0:
+	get:
+		return density_edit.property_value
+var prev_dens: float = 0
 var diffusion: float = 0:
 	get:
 		return diffusion_edit.property_value
@@ -43,6 +48,7 @@ func _ready() -> void:
 	speed_edit = $SpeedEdit
 	latitude_edit = $LatitudeEdit
 	longitude_edit = $LongitudeEdit
+	density_edit = $DensityEdit
 	diffusion_edit = $DiffusionEdit
 	color_edit = $ColorPickerButton
 
@@ -58,6 +64,7 @@ func _ready() -> void:
 	$SpeedEdit.text = str(0)
 	$LatitudeEdit.text = str(0.0)
 	$LongitudeEdit.text = str(0.0)
+	$DensityEdit.text = str(0)
 	$DiffusionEdit.text = str(0)
 	$ColorPickerButton.color = Color(randf(), randf(), randf())
 	
@@ -74,6 +81,9 @@ func set_latitude(value: float) -> void:
 func set_longitude(value: float) -> void:
 	longitude = value
 	longitude_edit.set_value(value)
+func set_density(value: float) -> void:
+	density = value
+	density_edit.set_value(value)
 func set_diffusion(value: float) -> void:
 	diffusion = value
 	diffusion_edit.set_value(value)
