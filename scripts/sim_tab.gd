@@ -1,4 +1,5 @@
 extends CanvasLayer
+const FITS_IMAGE_LOADER = preload("res://scripts/fits_image_loader.gd")
 @onready var file_explorer: FileDialog = $"/root/Hud/Body/SimTab/Control/FileExplorer"
 @onready var overlay_img_linedit: LineEdit = $"/root/Hud/Body/ScaleTab/Control/OverlayImgLineEdit"
 @onready var overlay_img_picker_btn: Button = $"/root/Hud/Body/ScaleTab/Control/OverlayImgPickerBtn"
@@ -84,7 +85,7 @@ func _on_overlay_img_chosen() -> void:
 # shows the navbar.file_explorer
 func _on_overlay_img_picker_btn_pressed() -> void:
 	file_explorer.file_mode = FileDialog.FILE_MODE_OPEN_FILE
-	file_explorer.filters = ["*.png,*.jpg,*.jpeg,*.webp;Images"]
+	file_explorer.filters = ["*.png,*.jpg,*.jpeg,*.webp,*.fits,*.fit,*.fts;CCD images"]
 	SaveManager.prepare_file_dialog(file_explorer)
 	file_explorer.popup_centered()
 	
@@ -112,9 +113,22 @@ func _on_file_explorer_file_selected(path: String) -> void:
 	sub_viewport_container.modulate.a = transparency_slider.value
 
 func load_texture(path: String) -> bool:
-	var img := Image.load_from_file(path)
+	var img: Image
+	var extension := path.get_extension().to_lower()
+	var fits_metadata: Dictionary = {}
+	if path.to_lower().ends_with(".fits.fz"):
+		Util.create_popup("FITS image not loaded", "Compressed FITS images are not supported yet. Please provide an uncompressed FITS file.")
+		return false
+	if extension in ["fits", "fit", "fts"]:
+		fits_metadata = FITS_IMAGE_LOADER.load_image(path)
+		if not fits_metadata.get("ok", false):
+			Util.create_popup("FITS image not loaded", str(fits_metadata.get("error", "The selected FITS file could not be read.")))
+			return false
+		img = fits_metadata["image"]
+	else:
+		img = Image.load_from_file(path)
 	if img == null or img.is_empty():
-		Util.create_popup("Image not loaded", "The selected file could not be read. Choose a PNG, JPEG or WebP image.")
+		Util.create_popup("Image not loaded", "The selected file could not be read. Choose a FITS, PNG, JPEG or WebP image.")
 		return false
 	overlay_img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	overlay_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -122,7 +136,14 @@ func load_texture(path: String) -> bool:
 	overlay_img.modulate.a = image_opacity_slider.value
 	# The square model view represents the longest image side; padding preserves pixel scale.
 	$"../ScaleTab/Control/TelImageSizeEdit".set_value(max(img.get_width(), img.get_height()))
-	$"../ScaleTab/Control/TelImageSizeEdit".tooltip_text = "%d × %d px; longest side used for the square field of view" % [img.get_width(), img.get_height()]
+	var image_details := "%d × %d px; longest side used for the square field of view" % [img.get_width(), img.get_height()]
+	if not fits_metadata.is_empty():
+		image_details += "\nFITS BITPIX %d; automatic display range %.5g to %.5g" % [
+			int(fits_metadata["bitpix"]),
+			float(fits_metadata["display_min"]),
+			float(fits_metadata["display_max"]),
+		]
+	$"../ScaleTab/Control/TelImageSizeEdit".tooltip_text = image_details
 	return true
 
 func _on_del_overlay_img_btn_pressed() -> void:

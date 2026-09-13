@@ -25,11 +25,18 @@ var section_collapsed: Dictionary = {}
 var section_original_offsets: Dictionary = {}
 var left_section_order := ["sun", "nucleus", "dust", "jets"]
 var right_section_order := ["nucleus_model", "date", "ccd", "run"]
+var fullscreen_controls_layer: CanvasLayer
+var fullscreen_button: Button
+var viewport_fullscreen := false
+var saved_main_view_layout: Dictionary = {}
+var fullscreen_hidden_visibility: Dictionary = {}
 
 func _ready() -> void:
 	_apply_application_theme()
 	_setup_top_navigation_layer()
+	_setup_fullscreen_viewer()
 	call_deferred("_layout_top_navigation")
+	call_deferred("_layout_fullscreen_button")
 	call_deferred("setup_tab_order")
 	call_deferred("_setup_help_page")
 	call_deferred("_layout_nucleus_parameters")
@@ -39,6 +46,7 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(func():
 		call_deferred("_layout_collapsible_sections")
 		call_deferred("_layout_top_navigation")
+		call_deferred("_layout_fullscreen_button")
 		call_deferred("_layout_help_page"))
 
 func _apply_application_theme() -> void:
@@ -73,6 +81,115 @@ func _layout_top_navigation() -> void:
 		button.add_theme_constant_override("icon_max_width", 24)
 		button.global_position = Vector2(first_x + index * 44.0, tab_rect.position.y - 10.0)
 		button.size = button_size
+
+func _setup_fullscreen_viewer() -> void:
+	fullscreen_controls_layer = CanvasLayer.new()
+	fullscreen_controls_layer.name = "FullscreenViewerControls"
+	fullscreen_controls_layer.layer = 40
+	add_child(fullscreen_controls_layer)
+
+	fullscreen_button = Button.new()
+	fullscreen_button.name = "FullscreenViewportButton"
+	fullscreen_button.text = "⛶"
+	fullscreen_button.tooltip_text = "Expand main viewport (F11)"
+	fullscreen_button.theme = $Viewport/Panel.theme
+	fullscreen_button.focus_mode = Control.FOCUS_NONE
+	fullscreen_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	fullscreen_button.add_theme_font_size_override("font_size", 22)
+	fullscreen_button.pressed.connect(_toggle_fullscreen_viewer)
+	fullscreen_controls_layer.add_child(fullscreen_button)
+
+	var tabs: TabContainer = $Body/ModelPanel/Navbar
+	tabs.tab_changed.connect(func(tab: int):
+		if viewport_fullscreen and tab != 1:
+			_set_fullscreen_viewer(false)
+		fullscreen_button.visible = tab == 1
+		call_deferred("_layout_fullscreen_button"))
+	fullscreen_button.visible = tabs.current_tab == 1
+
+func _toggle_fullscreen_viewer() -> void:
+	_set_fullscreen_viewer(not viewport_fullscreen)
+
+func _set_fullscreen_viewer(enabled: bool) -> void:
+	if enabled == viewport_fullscreen:
+		return
+	if enabled and $Body/ModelPanel/Navbar.current_tab != 1:
+		return
+
+	var main_view: Panel = $Viewport/Panel
+	if enabled:
+		saved_main_view_layout = {
+			"anchor_left": main_view.anchor_left,
+			"anchor_top": main_view.anchor_top,
+			"anchor_right": main_view.anchor_right,
+			"anchor_bottom": main_view.anchor_bottom,
+			"offset_left": main_view.offset_left,
+			"offset_top": main_view.offset_top,
+			"offset_right": main_view.offset_right,
+			"offset_bottom": main_view.offset_bottom,
+		}
+		fullscreen_hidden_visibility.clear()
+		for node: Node in _fullscreen_hidden_nodes():
+			fullscreen_hidden_visibility[node] = node.visible
+			node.visible = false
+		top_navigation_layer.visible = false
+		if section_controls_layer != null:
+			section_controls_layer.visible = false
+		main_view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		main_view.offset_left = 12.0
+		main_view.offset_top = 12.0
+		main_view.offset_right = -12.0
+		main_view.offset_bottom = -12.0
+	else:
+		top_navigation_layer.visible = true
+		if section_controls_layer != null:
+			section_controls_layer.visible = true
+		for node in fullscreen_hidden_visibility:
+			if is_instance_valid(node):
+				node.visible = fullscreen_hidden_visibility[node]
+		_restore_main_view_layout(main_view)
+		call_deferred("_apply_section_state")
+		call_deferred("_layout_top_navigation")
+
+	viewport_fullscreen = enabled
+	fullscreen_button.text = "×" if enabled else "⛶"
+	fullscreen_button.tooltip_text = "Exit full viewport (Esc or F11)" if enabled else "Expand main viewport (F11)"
+	_layout_fullscreen_button()
+	call_deferred("setup_tab_order")
+
+func _fullscreen_hidden_nodes() -> Array[Node]:
+	var nodes: Array[Node] = [
+		$Body,
+		$Viewport/NucleusPanelRect,
+		$Viewport/NucleusPanel,
+		$Viewport/MiniViewportContainer,
+		$Viewport/NucleusModelLabel,
+	]
+	# Nested CanvasLayers draw independently from their parent CanvasLayer and
+	# therefore need to be hidden explicitly.
+	for child in $Body.get_children():
+		if child is CanvasLayer:
+			nodes.append(child)
+	return nodes
+
+func _restore_main_view_layout(main_view: Panel) -> void:
+	if saved_main_view_layout.is_empty():
+		return
+	main_view.anchor_left = saved_main_view_layout["anchor_left"]
+	main_view.anchor_top = saved_main_view_layout["anchor_top"]
+	main_view.anchor_right = saved_main_view_layout["anchor_right"]
+	main_view.anchor_bottom = saved_main_view_layout["anchor_bottom"]
+	main_view.offset_left = saved_main_view_layout["offset_left"]
+	main_view.offset_top = saved_main_view_layout["offset_top"]
+	main_view.offset_right = saved_main_view_layout["offset_right"]
+	main_view.offset_bottom = saved_main_view_layout["offset_bottom"]
+
+func _layout_fullscreen_button() -> void:
+	if fullscreen_button == null or not fullscreen_button.visible:
+		return
+	var main_rect: Rect2 = $Viewport/Panel.get_global_rect()
+	fullscreen_button.size = Vector2(40, 40)
+	fullscreen_button.global_position = main_rect.position + Vector2(main_rect.size.x - 50.0, 10.0)
 
 func _setup_collapsible_sections() -> void:
 	await get_tree().process_frame
@@ -305,6 +422,15 @@ func _layout_nucleus_parameters() -> void:
 				Rect2(panel.position + Vector2(x + 40, y), Vector2(76, 31)))
 	
 func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_F11 and ($Body/ModelPanel/Navbar.current_tab == 1 or viewport_fullscreen):
+			_toggle_fullscreen_viewer()
+			get_viewport().set_input_as_handled()
+			return
+		if event.keycode == KEY_ESCAPE and viewport_fullscreen:
+			_set_fullscreen_viewer(false)
+			get_viewport().set_input_as_handled()
+			return
 	# Refresh before Godot handles TAB: tabs and jet rows can change at runtime.
 	if event.is_action_pressed("ui_focus_next") or event.is_action_pressed("ui_focus_prev"):
 		setup_tab_order()
