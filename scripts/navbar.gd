@@ -185,15 +185,19 @@ func _on_trigger_rot_btn_pressed() -> void:
 func _on_reset_rotn_btn_pressed() -> void:
 	get_tree().call_group("reset_rotation", "reset_rotation")
 
-## Toggle X and Z Axes
+## Toggle the apparent-velocity vector (JPL Sky_mot_PA)
 func _on_toggle_axes_btn_pressed() -> void:
 	get_tree().call_group("toggle_axis", "toggle_axis", AxisArrow.AXIS_TYPE.VELOCITY)
-	#get_tree().call_group("toggle_axis", "toggle_axis", AxisArrow.AXIS_TYPE.X)
-	#get_tree().call_group("toggle_axis", "toggle_axis", AxisArrow.AXIS_TYPE.Z)
-## Toggle Y Axis
+
+## Toggle both halves of the spin axis as one visual element.
 func _on_toggle_y_btn_pressed() -> void:
-	get_tree().call_group("toggle_axis", "toggle_axis", AxisArrow.AXIS_TYPE.Y)
-	get_tree().call_group("toggle_axis", "toggle_axis", AxisArrow.AXIS_TYPE.REVERSE_Y)
+	var spin_axes: Array[Node] = []
+	for node in get_tree().get_nodes_in_group("toggle_axis"):
+		if node is AxisArrow and node.axis_type in [AxisArrow.AXIS_TYPE.Y, AxisArrow.AXIS_TYPE.REVERSE_Y]:
+			spin_axes.append(node)
+	var hide_all := spin_axes.any(func(node: Node) -> bool: return node.visible)
+	for node in spin_axes:
+		node.visible = not hide_all
 
 ## Toggle Sun Axis
 func _on_toggle_sun_btn_pressed() -> void:

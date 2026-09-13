@@ -1,5 +1,6 @@
 extends MeshInstance3D
 class_name Comet
+const SPIN_AXIS_COORDINATES = preload("res://scripts/spin_axis_coordinates.gd")
 enum ANIMATION_STATE {
 	STARTED,
 	PAUSED,
@@ -57,6 +58,7 @@ var rotation_angle: float = 0.0
 var speed_sim: int = 1
 
 var reload_timer: Timer
+var syncing_axis_coordinates := false
 var is_holding_next := false
 var hold_started_next := false
 var is_holding_prev := false
@@ -338,17 +340,20 @@ func update_radius(value: float) -> void:
 # 	mesh.set_height(value)
 func update_direction_rotation(value: float) -> void:
 	if Util.PRINT_UPDATE_METHOD: print("Updated comet PA:%f"%value)
-	Util.comet_direction = value
+	Util.comet_direction = fposmod(value, 360.0)
 	
 	update_comet_orientation()
 	update_velocity_axis()
+	update_ra_dec_from_pa_incl()
 	
 func update_inclination_rotation(value: float) -> void:
 	if Util.PRINT_UPDATE_METHOD: print("Updated comet inclination:%f"%value)
+	# The rendering code historically stores the opposite sign internally.
+	# The UI and coordinate transformations always use the documented value.
 	Util.comet_inclination = - value
-	print("Inclination set to:%f"%Util.comet_inclination)
 	update_comet_orientation()
 	update_velocity_axis()
+	update_ra_dec_from_pa_incl()
 	
 #jets related
 func update_jet_rate(value: float) -> void:
@@ -414,29 +419,56 @@ func update_delta_p(value: float, booted: bool = true) -> void:
 	update_velocity_axis()
 	
 func update_pa_incl() -> void:
-	var alpha_rad := deg_to_rad(Util.alpha_p)
-	var delta_rad := deg_to_rad(Util.delta_p)
-	var ra_comet_pos: float = float(Util.jpl_data[current_date_index]["right_ascension"])
-	var dec_comet_pos: float = float(Util.jpl_data[current_date_index]["declination"])
+	if not _has_current_ephemeris():
+		return
+	var target_ra := float(Util.jpl_data[current_date_index]["right_ascension"])
+	var target_dec := float(Util.jpl_data[current_date_index]["declination"])
+	var result: Dictionary = SPIN_AXIS_COORDINATES.equatorial_to_sky(
+		Util.alpha_p, Util.delta_p, target_ra, target_dec)
+	var inclination_ui := float(result["inclination"])
 
-	var pa: float = atan2(
-		cos(delta_rad) * sin(alpha_rad - deg_to_rad(ra_comet_pos)),
-		cos(deg_to_rad(dec_comet_pos)) * sin(delta_rad) - sin(deg_to_rad(dec_comet_pos)) * cos(delta_rad) * cos(alpha_rad - deg_to_rad(ra_comet_pos)))
-	pa = fmod(pa + 2 * PI, 2 * PI)
-	var incl: float = acos(cos(alpha_rad - deg_to_rad(ra_comet_pos)) * cos(deg_to_rad(dec_comet_pos)) * cos(delta_rad) + sin(deg_to_rad(dec_comet_pos)) * sin(delta_rad))
+	syncing_axis_coordinates = true
+	Util.comet_direction = float(result["pa"])
+	Util.comet_inclination = -inclination_ui
+	_set_slider_field_without_signal(Util.comet_pa_line_edit, Util.comet_direction)
+	_set_slider_field_without_signal(Util.comet_incl_line_edit, inclination_ui)
+	syncing_axis_coordinates = false
+	update_comet_orientation()
+	update_velocity_axis()
 
-	Util.comet_direction = rad_to_deg(pa)
-	Util.comet_inclination = (-90 + rad_to_deg(incl))
+func update_ra_dec_from_pa_incl() -> void:
+	if syncing_axis_coordinates or not _has_current_ephemeris():
+		return
+	var target_ra := float(Util.jpl_data[current_date_index]["right_ascension"])
+	var target_dec := float(Util.jpl_data[current_date_index]["declination"])
+	var inclination_ui := -Util.comet_inclination
+	var result: Dictionary = SPIN_AXIS_COORDINATES.sky_to_equatorial(
+		Util.comet_direction, inclination_ui, target_ra, target_dec)
 
+	syncing_axis_coordinates = true
+	Util.alpha_p = float(result["ra"])
+	Util.delta_p = float(result["dec"])
+	var ra_field: SliderWithLineEdit = get_node("/root/Hud/Body/CometTab/Control/AlphaPSanEdit")
+	var dec_field: SliderWithLineEdit = get_node("/root/Hud/Body/CometTab/Control/DeltaPSanEdit")
+	_set_slider_field_without_signal(ra_field, Util.alpha_p)
+	_set_slider_field_without_signal(dec_field, Util.delta_p)
+	update_lambda_beta()
+	update_i_phi()
+	update_subsolar_latitude()
+	syncing_axis_coordinates = false
 
-	# print("Updated PA:%f incl:%f" % [Util.comet_direction, Util.comet_inclination])
-	
-	Util.comet_incl_line_edit.set_value(Util.comet_inclination, false)
-	Util.comet_pa_line_edit.set_value(Util.comet_direction, false)
-	# this is needed in order to sync PA/INCL fields and RA/DEC fields pa_incl 
-	update_inclination_rotation(Util.comet_inclination)
-	print("RADEC Inclination set to:%f" % Util.comet_inclination)
-	# update_comet_orientation()
+func _has_current_ephemeris() -> bool:
+	return (Util.jpl_data != null
+		and Util.jpl_data.size() > 0
+		and current_date_index >= 0
+		and current_date_index < Util.jpl_data.size()
+		and Util.jpl_data[current_date_index].has("right_ascension")
+		and Util.jpl_data[current_date_index].has("declination"))
+
+func _set_slider_field_without_signal(field: SliderWithLineEdit, value: float) -> void:
+	field.set_value(value, false)
+	field.line_edit.property_value = value
+	field.line_edit.previous_value = value
 func update_lambda_beta() -> void:
 	var alpha_rad := deg_to_rad(Util.alpha_p)
 	var delta_rad := deg_to_rad(Util.delta_p)
@@ -534,8 +566,10 @@ func update_velocity_axis() -> void:
 		return
 
 	var entry: Dictionary = Util.jpl_data[current_date_index]
-	var psamv: float = float(entry.get("psamv", entry.get("sky_motion_pa", 0.0)))
-	var pa_rad: float = deg_to_rad(psamv)
+	# The requested velocity arrow represents the apparent motion on the sky.
+	# JPL supplies its astronomical position angle in Sky_mot_PA (quantity 47).
+	var sky_motion_pa: float = float(entry.get("sky_motion_pa", 0.0))
+	var pa_rad: float = deg_to_rad(sky_motion_pa)
 
 	var cam_up: Vector3 = camera.global_transform.basis.y.normalized()
 	var cam_right: Vector3 = camera.global_transform.basis.x.normalized()
