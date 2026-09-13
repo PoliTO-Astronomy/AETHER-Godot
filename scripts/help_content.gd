@@ -82,7 +82,9 @@ I pulsanti sotto l'anteprima mostrano o nascondono:
 
 [color=#F2E94E]■ direzione del Sole, in giallo[/color]
 [color=#45D65A]■ asse di rotazione, in verde[/color]
-[color=#32B8E6]■ direzione della coda di polvere (PsAMV, velocità eliocentrica negativa proiettata), in azzurro[/color]
+[color=#32B8E6]■ vettore della velocità apparente (Sky mot PA JPL), in azzurro[/color]
+
+Il pulsante dell'asse verde mostra o nasconde insieme entrambe le metà dell'asse di rotazione. Il pulsante della velocità agisce separatamente dalla direzione del Sole e dall'asse.
 
 Sono disponibili anche la griglia di coordinate e la data. [b]Save Image[/b] salva l'orientamento del nucleo con gli elementi selezionati per l'istante corrente.
 
@@ -141,7 +143,7 @@ Inserisci il raggio del nucleo in chilometri, il periodo di rotazione in ore e i
 L'orientamento dell'asse può essere definito in due modi:
 
 1. Inserisci le coordinate equatoriali RA e Dec in gradi decimali; AETHER calcola position angle e inclinazione dell'asse rispetto al piano del cielo.
-2. Inserisci manualmente Spin Axis PA e Spin Axis Inclination; AETHER calcola RA e Dec.
+2. Inserisci manualmente Spin Axis PA e Spin Axis Inclination; usando la posizione della cometa nelle effemeridi della data corrente, AETHER calcola RA e Dec. Il PA è misurato dal Nord verso Est; l'inclinazione vale 0° sul piano del cielo, −90° verso l'osservatore e +90° nella direzione opposta.
 
 In entrambi i casi vengono calcolate le coordinate eclittiche λ e β e le coordinate orbitali Φ e I.""",
 
@@ -242,7 +244,9 @@ The buttons below the preview show or hide:
 
 [color=#F2E94E]■ Sun direction, yellow[/color]
 [color=#45D65A]■ spin axis, green[/color]
-[color=#32B8E6]■ dust-tail direction (PsAMV, projected negative heliocentric velocity), blue[/color]
+[color=#32B8E6]■ apparent-velocity vector (JPL Sky mot PA), cyan[/color]
+
+The green-axis button shows or hides both halves of the spin axis together. The velocity button works independently from the Sun direction and spin axis.
 
 A coordinate grid and the date are also available. [b]Save Image[/b] saves the nucleus orientation with the selected elements for the current instant.
 
@@ -301,7 +305,7 @@ Enter the nucleus radius in kilometres, rotation period in hours and number of r
 The axis orientation can be defined in two ways:
 
 1. Enter equatorial coordinates RA and Dec in decimal degrees; AETHER calculates position angle and axis inclination relative to the sky plane.
-2. Enter Spin Axis PA and Spin Axis Inclination manually; AETHER calculates RA and Dec.
+2. Enter Spin Axis PA and Spin Axis Inclination manually; using the comet position in the current date's ephemeris, AETHER calculates RA and Dec. PA is measured from North towards East; inclination is 0° in the sky plane, −90° towards the observer and +90° away.
 
 In both cases, the ecliptic coordinates λ and β and orbital coordinates Φ and I are calculated automatically.""",
 

@@ -22,7 +22,7 @@ func _draw() -> void:
 	draw_string(font, origin + Vector2(8, 18), "Sky directions", HORIZONTAL_ALIGNMENT_LEFT, -1, title_size, ink_color)
 	_draw_direction_row(origin + Vector2(25, 47), 0.0, "N", "North  PA 0.0 deg", body_size)
 	_draw_direction_row(origin + Vector2(25, 79), Util.sun_direction, "S", "Sun  PA %.1f deg" % _normalized_pa(Util.sun_direction), body_size)
-	_draw_direction_row(origin + Vector2(25, 111), Util.psamv, "T", "Dust tail  PsAMV %.1f deg" % _normalized_pa(Util.psamv), body_size)
+	_draw_direction_row(origin + Vector2(25, 111), Util.sky_motion_pa, "V", "Velocity  Sky mot PA %.1f deg" % _normalized_pa(Util.sky_motion_pa), body_size)
 
 func _draw_direction_row(origin: Vector2, pa_degrees: float, symbol: String, caption: String, font_size: int) -> void:
 	# Astronomical position angle: North is up and East is left in the sky view.
