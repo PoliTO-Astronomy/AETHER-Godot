@@ -22,6 +22,12 @@ func update_calendar_buttons(selected_date : Date):
 		var btn_node : Button = buttons_container.get_node("btn_" + str(i + start_day_of_week))
 		btn_node.set_text(str(i + 1))
 		btn_node.set_disabled(false)
+		btn_node.tooltip_text = "%02d/%02d/%04d" % [i + 1, selected_date.month(), selected_date.year()]
+		if i + 1 == selected_date.day():
+			var selection := StyleBoxFlat.new()
+			selection.bg_color = Color("238aa3")
+			selection.set_corner_radius_all(4)
+			btn_node.add_theme_stylebox_override("normal", selection)
 		
 		# If the day entered is "today"
 		if(i + 1 == calendar.day() && selected_date.year() == calendar.year() && selected_date.month() == calendar.month() ):
@@ -35,3 +41,5 @@ func _clear_calendar_buttons():
 		btn_node.set_text("")
 		btn_node.set_disabled(true)
 		btn_node.set_flat(false)
+		btn_node.remove_theme_stylebox_override("normal")
+		btn_node.tooltip_text = ""

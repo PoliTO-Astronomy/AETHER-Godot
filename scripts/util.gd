@@ -13,8 +13,10 @@ var sun_direction: float = 0.0
 var comet_inclination: float = 0.0
 ## current direction angle of the comet
 var comet_direction: float = 0.0
-## jet rate in minutes
-var jet_rate: float = 0.0
+## Time interval in minutes between two dust-emission integration steps.
+const MIN_INTEGRATION_STEP_MINUTES := 0.5
+const DEFAULT_INTEGRATION_STEP_MINUTES := 5.0
+var jet_rate: float = DEFAULT_INTEGRATION_STEP_MINUTES
 ## Sun-comet distance in AU
 var sun_comet_distance: float = 0.0
 ## Sun direction vector in the 3D space
@@ -66,6 +68,8 @@ var w := 0.0 ## Argument of perihelion
 var incl := 0.0 ## Inclination
 var i := 0.0 ## angle between rotationa xis and the orbital plane in degrees
 var phi := 0.0 ## angle between projection of axis direction and sun direction at perihelion in degrees
+var psang := 0.0 ## Position angle of the projected extended Sun-to-target radius
+var psamv := 0.0 ## Position angle of the projected negative heliocentric velocity (dust-tail direction)
 var sky_motion_pa := 0.0
 ## Orbital comet basis
 var orbital_basis: Basis = Basis() ## Orbital basis of the comet in the 3D space
@@ -76,10 +80,6 @@ var orbital_transformation: Transform3D = Transform3D() ## Orbital transformatio
 ## Equatorial transformation
 var equatorial_transformation: Transform3D = Transform3D() ## Equatorial transformation of the comet in the 3D space
 var equatorial_rotation: Quaternion ## Equatorial rotation of the comet in the 3D space
-
-# Simulation related properties
-# var true_anomaly: float = 0.0 ## angular position of the comet in its orbit in degrees
-var n_points: int = 1 ## number of points in the orbit
 
 #particle properties
 var albedo: float = 0.0
@@ -92,6 +92,23 @@ const GRAVITATIONAL_CONSTANT: float = 6.674e-11 ## G. Gravitational Constant exp
 const SUN_MASS: float = 1.98892e30 ## Ms. Sun mass expressed in Kg
 const SUN_LUMINOSITY: float = 3.828e26 ## Ls. Sun Luminosity expressed in J/s
 const LIGHT_SPEED: float = 2.99792458e8 ## c. Speed of light Expressed in m/s
+
+## Radiation-pressure acceleration and beta for a spherical dust grain with Qpr = 1.
+## Diameter is expressed in millimetres, density in g/cm³ and distance in AU.
+## Optical albedo is deliberately excluded from this physical model.
+func calculate_dust_radiation(diameter_mm: float, density_g_cm3: float, distance_au: float) -> Dictionary:
+	if diameter_mm <= 0.0 or density_g_cm3 <= 0.0 or distance_au <= 0.0:
+		return {}
+	var distance_m := distance_au * AU
+	var grain_radius_m := diameter_mm / 2000.0
+	var density_kg_m3 := density_g_cm3 * 1000.0
+	var radiation_pressure := SUN_LUMINOSITY / (4.0 * PI * LIGHT_SPEED * pow(distance_m, 2))
+	var acceleration := 3.0 * radiation_pressure / (4.0 * grain_radius_m * density_kg_m3)
+	var solar_gravity := GRAVITATIONAL_CONSTANT * SUN_MASS / pow(distance_m, 2)
+	return {
+		"acceleration": acceleration,
+		"beta": acceleration / solar_gravity,
+	}
 
 var is_simulation: bool = true ## True: simulation enabled, False: instant simulation enabled
 
