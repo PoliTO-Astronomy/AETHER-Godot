@@ -28,7 +28,7 @@ var n_steps: int = 0
 var step_counter: int = 0
 
 var angle_per_step: float = 0
-var jet_rate: float = 0
+var jet_rate: float = 5.0
 var jet_rate_sped_up: float = 0
 var num_rotation: float = 0
 var frequency: float = 0
@@ -65,6 +65,9 @@ var hold_started_prev := false
 @onready var repeat_timer: Timer = get_node("/root/Hud/Body/CometTab/RepeatTimer")
 
 func _ready() -> void:
+	var integration_step_field: SanitizedEdit = get_node_or_null("/root/Hud/Body/JetsTab/Control/JetRateEdit")
+	if integration_step_field != null:
+		update_jet_rate(maxf(float(integration_step_field.text), Util.MIN_INTEGRATION_STEP_MINUTES))
 	var _x_axis := axis_scene.instantiate() as AxisArrow
 	add_child(_x_axis)
 	_x_axis.add_to_group("toggle_axis")
@@ -176,6 +179,8 @@ func instant_simulation() -> void:
 	animation_slider.instant_simulation()
 
 func simulation_setup() -> void:
+	jet_rate = maxf(jet_rate, Util.MIN_INTEGRATION_STEP_MINUTES)
+	Util.jet_rate = jet_rate
 	get_tree().call_group("disable", "disable_btn", "LoadBtn")
 
 	Util.equatorial_rotation = quaternion
@@ -340,9 +345,10 @@ func update_inclination_rotation(value: float) -> void:
 	
 #jets related
 func update_jet_rate(value: float) -> void:
-	if Util.PRINT_UPDATE_METHOD: print("Updated jet_rate:%f"%value)
-	jet_rate = value
-	Util.jet_rate = value
+	var safe_value := maxf(value, Util.MIN_INTEGRATION_STEP_MINUTES)
+	if Util.PRINT_UPDATE_METHOD: print("Updated integration step:%f" % safe_value)
+	jet_rate = safe_value
+	Util.jet_rate = safe_value
 func update_num_rotation(value: float) -> void:
 	if Util.PRINT_UPDATE_METHOD: print("Updated num_rotation:%f"%value)
 	num_rotation = value
@@ -357,7 +363,6 @@ func update_scale(value: float) -> void:
 func update_albedo(value: float) -> void:
 	if Util.PRINT_UPDATE_METHOD: print("Updated albedo:%f"%value)
 	Util.albedo = value
-	get_tree().call_group("emitter", "update_acceleration")
 func update_particle_diameter(value: float) -> void:
 	if Util.PRINT_UPDATE_METHOD: print("Updated particle_diameter:%f"%value)
 	Util.particle_diameter = value
@@ -521,8 +526,9 @@ func update_velocity_axis() -> void:
 	if camera == null:
 		return
 
-	var sky_motion_pa: float = float(Util.jpl_data[current_date_index]["sky_motion_pa"])
-	var pa_rad: float = deg_to_rad(sky_motion_pa)
+	var entry: Dictionary = Util.jpl_data[current_date_index]
+	var psamv: float = float(entry.get("psamv", entry.get("sky_motion_pa", 0.0)))
+	var pa_rad: float = deg_to_rad(psamv)
 
 	var cam_up: Vector3 = camera.global_transform.basis.y.normalized()
 	var cam_right: Vector3 = camera.global_transform.basis.x.normalized()
@@ -567,6 +573,10 @@ func switch_date_set_date(date: String, reset: bool = false) -> void:
 	update_subsolar_latitude()
 	
 	Util.sun_pa_line_edit.set_value(float(Util.jpl_data[current_date_index]["sun_pa"]))
+	var current_entry: Dictionary = Util.jpl_data[current_date_index]
+	Util.psang = float(current_entry.get("psang", current_entry.get("sun_pa", 0.0)))
+	Util.psamv = float(current_entry.get("psamv", current_entry.get("sky_motion_pa", 0.0)))
+	Util.sky_motion_pa = float(current_entry.get("sky_motion_pa", Util.psamv))
 	Util.sun_incl_line_edit.set_value(float(Util.jpl_data[current_date_index]["sto"]))
 	Util.sun_dist_line_edit.set_value(float(Util.jpl_data[current_date_index]["sun_distance_r"]))
 	Util.scale_line_edit.set_value(float(Util.jpl_data[current_date_index]["delta"]))

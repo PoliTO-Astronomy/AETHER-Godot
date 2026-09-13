@@ -7,56 +7,97 @@ extends CanvasLayer
 @onready var transparency_slider: HSlider = $"/root/Hud/Body/SimTab/Control/TransparencySlider"
 @onready var overlay_img: TextureRect = $"/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer/OverlayImg"
 @onready var sub_viewport_container: SubViewportContainer = $"/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer/SubViewportContainer"
+var image_opacity_slider: HSlider
+var image_opacity_label: Label
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	# $Control/FrequencyEdit.set_value(1)
 	# $Control/NumRotationEdit.set_value(1)
 	# $Control/JetRateEdit.set_value(5)
-	pass
+	image_opacity_slider = HSlider.new()
+	image_opacity_slider.name = "ImageOpacitySlider"
+	image_opacity_slider.max_value = 1.0
+	image_opacity_slider.step = 0.01
+	image_opacity_slider.value = 1.0
+	image_opacity_slider.tooltip_text = "CCD image opacity: 0% hidden, 100% opaque"
+	image_opacity_slider.value_changed.connect(_on_image_opacity_changed)
+	$Control.add_child(image_opacity_slider)
+	image_opacity_label = Label.new()
+	image_opacity_label.name = "ImageOpacityLabel"
+	$Control.add_child(image_opacity_label)
+	$Control/CCDImagePanel.resized.connect(_layout_opacity_controls)
+	call_deferred("_layout_opacity_controls")
+
+func _layout_opacity_controls() -> void:
+	var panel: Control = $Control/CCDImagePanel
+	var width := (panel.size.x - 44.0) / 2.0
+	var origin := panel.position + Vector2(16, 32)
+	var model_label: Label = $Control/ModelTransparencyLabel
+	for label in [model_label, image_opacity_label]:
+		label.add_theme_font_size_override("font_size", 14)
+	Hud._place_control(model_label, Rect2(origin, Vector2(width, 22)))
+	Hud._place_control(transparency_slider, Rect2(origin + Vector2(0, 22), Vector2(width, 22)))
+	Hud._place_control(image_opacity_label, Rect2(origin + Vector2(width + 12, 0), Vector2(width, 22)))
+	Hud._place_control(image_opacity_slider, Rect2(origin + Vector2(width + 12, 22), Vector2(width, 22)))
+	Hud._place_control($Control/CCDImageInfoBtn, Rect2(panel.position + Vector2(112, 6), Vector2(20, 20)))
+	Hud._place_control($Control/CCDImgLabel, Rect2(panel.position + Vector2(14, 5), Vector2(96, 24)))
+	Hud._place_control($Control/ToggleTransparency,
+		Rect2(panel.position + Vector2(panel.size.x - 88, 7), Vector2(38, 24)))
+	_update_opacity_labels()
+
+func _update_opacity_labels() -> void:
+	$Control/ModelTransparencyLabel.text = "Model: %d%%" % roundi(transparency_slider.value * 100)
+	image_opacity_label.text = "Image: %d%%" % roundi(image_opacity_slider.value * 100)
+
+func _on_image_opacity_changed(value: float) -> void:
+	overlay_img.modulate.a = value
+	_update_opacity_labels()
 
 ## Called by Navbar._on_file_explorer_file_selected()
 ## Save the data into the SaveManager.config structure
 func save_data() -> void:
+	SaveManager.config.set_value("display", "image_opacity", image_opacity_slider.value)
+	SaveManager.config.set_value("display", "model_opacity", transparency_slider.value)
 	SaveManager.config.set_value("simulation", "frequency", $Control/FrequencyEdit/SanitizedEdit.text)
-	SaveManager.config.set_value("simulation", "num_rotations", $Control/NumRotationEdit.text)
+	SaveManager.config.set_value("simulation", "num_rotations", $"../CometTab/Control/NumRotationEdit".text)
 	SaveManager.config.set_value("simulation", "jet_rate", $"../JetsTab/Control/JetRateEdit".text)
 	SaveManager.config.set_value("simulation", "scale", $Control/KmScaleEdit.text)
 	SaveManager.config.set_value("simulation", "i", $Control/IEdit.text)
 	SaveManager.config.set_value("simulation", "phi", $Control/PhiEdit.text)
 	SaveManager.config.set_value("simulation", "true_anomaly", $Control/TrueAnomalyEdit.text)
-	#SaveManager.config.set_value("simulation", "n_points", $Control/NPointsEdit.text)
 ## Called by Navbar._on_file_explorer_file_selected()
 ## Loads the data from the config file into the different element of the scene
 func load_data() -> void:
+	image_opacity_slider.value = float(SaveManager.config.get_value("display", "image_opacity", 1.0))
+	transparency_slider.value = float(SaveManager.config.get_value("display", "model_opacity", 1.0))
 	$Control/FrequencyEdit.set_value(float(SaveManager.config.get_value("simulation", "frequency", 0)))
-	$Control/NumRotationEdit.set_value(float(SaveManager.config.get_value("simulation", "num_rotations", 0)))
-	$"../JetsTab/Control/JetRateEdit".set_value(float(SaveManager.config.get_value("simulation", "jet_rate", 0)))
+	$"../CometTab/Control/NumRotationEdit".set_value(float(SaveManager.config.get_value("simulation", "num_rotations", 0)))
+	var saved_integration_step := float(SaveManager.config.get_value(
+		"simulation", "jet_rate", Util.DEFAULT_INTEGRATION_STEP_MINUTES))
+	$"../JetsTab/Control/JetRateEdit".set_value(maxf(
+		saved_integration_step, Util.MIN_INTEGRATION_STEP_MINUTES))
 	$Control/KmScaleEdit.set_value(float(SaveManager.config.get_value("simulation", "scale", 0)))
 
-	#$Control/NPointsEdit.set_value(int(SaveManager.config.get_value("simulation", "n_points", 1)))
-
-
-#func update_n_points(value: float) -> void:
-#	if Util.PRINT_UPDATE_METHOD or true: print("Updated n_points:%f"%value)
-#	Util.n_points = int(value)
 
 func _on_overlay_img_chosen() -> void:
 	print("lol")
 # shows the navbar.file_explorer
 func _on_overlay_img_picker_btn_pressed() -> void:
 	file_explorer.file_mode = FileDialog.FILE_MODE_OPEN_FILE
-	file_explorer.filters = ["*.png;Image File"]
+	file_explorer.filters = ["*.png,*.jpg,*.jpeg,*.webp;Images"]
+	SaveManager.prepare_file_dialog(file_explorer)
 	file_explorer.popup_centered()
-	file_explorer.current_file = "config"
 	
 	file_explorer.visible = true
 
 
 func _on_file_explorer_file_selected(path: String) -> void:
-	print("File selected: ", path)
-	var filename := path.get_file()
+	if not load_texture(path):
+		return
+	SaveManager.remember_file_directory(path)
 	overlay_img_linedit.visible = true
-	overlay_img_linedit.text = filename
+	overlay_img_linedit.text = path.get_file()
+	overlay_img_linedit.tooltip_text = "%s\n%d × %d px" % [path, overlay_img.texture.get_width(), overlay_img.texture.get_height()]
 
 	# overlay_img_picker_btn.visible = false
 	# del_overlay_img_btn.visible = true
@@ -66,14 +107,23 @@ func _on_file_explorer_file_selected(path: String) -> void:
 
 	sub_viewport_container.get_node("SubViewport").transparent_bg = true
 
-	load_texture(path)
+	overlay_img.visible = true
+	$Control/ToggleTransparency.set_pressed_no_signal(true)
+	sub_viewport_container.modulate.a = transparency_slider.value
 
-func load_texture(path: String) -> void:
+func load_texture(path: String) -> bool:
 	var img := Image.load_from_file(path)
-	var side := int(Util.window_size)
-	img.resize(side, side)
+	if img == null or img.is_empty():
+		Util.create_popup("Image not loaded", "The selected file could not be read. Choose a PNG, JPEG or WebP image.")
+		return false
+	overlay_img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	overlay_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	overlay_img.texture = ImageTexture.create_from_image(img)
-	overlay_img.modulate.a = 1
+	overlay_img.modulate.a = image_opacity_slider.value
+	# The square model view represents the longest image side; padding preserves pixel scale.
+	$"../ScaleTab/Control/TelImageSizeEdit".set_value(max(img.get_width(), img.get_height()))
+	$"../ScaleTab/Control/TelImageSizeEdit".tooltip_text = "%d × %d px; longest side used for the square field of view" % [img.get_width(), img.get_height()]
+	return true
 
 func _on_del_overlay_img_btn_pressed() -> void:
 	# overlay_img_linedit.visible = false
@@ -88,9 +138,11 @@ func _on_del_overlay_img_btn_pressed() -> void:
 
 	sub_viewport_container.modulate.a = 1.0
 	sub_viewport_container.get_node("SubViewport").transparent_bg = false
+	overlay_img_linedit.tooltip_text = ""
 
 func _on_transparency_slider_value_changed(value: float) -> void:
-	if $"/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer/OverlayImg".texture == null:
+	_update_opacity_labels()
+	if overlay_img.texture == null or not overlay_img.visible:
 		sub_viewport_container.modulate.a = 1.0
 		return
 	sub_viewport_container.modulate.a = value

@@ -1,5 +1,7 @@
 extends CanvasLayer
 
+const AETHER_THEME = preload("res://scripts/aether_theme.gd")
+
 @onready var search_bar: LineEdit = $Control/SearchBar
 @onready var start_date_ledit: LineEdit = $Control/StartDateLineEdit
 @onready var end_date_ledit: LineEdit = $Control/EndDateLineEdit
@@ -12,6 +14,263 @@ var http_request_name: HTTPRequest
 var start_date: Date
 var end_date: Date
 var step_size: float = 24.0
+var date_hints: Array[Label] = []
+var observation_title: Label
+var results_title: Label
+var empty_results_label: Label
+var empty_results_overlay: CenterContainer
+
+func _filter_date_characters(_text: String, edit: LineEdit) -> void:
+	var filtered := ""
+	var caret := 0
+	for i in range(edit.text.length()):
+		var character := edit.text[i]
+		if (character in "0123456789/") and filtered.length() < 10:
+			filtered += character
+			if i < edit.caret_column:
+				caret += 1
+	if filtered != edit.text:
+		edit.text = filtered
+		edit.caret_column = caret
+
+func parse_input_date(value: String) -> Date:
+	var matcher := RegEx.new()
+	matcher.compile("^([0-9]{1,2})/([0-9]{1,2})/([0-9]{4})$")
+	var result := matcher.search(value.strip_edges())
+	if result == null:
+		return null
+	var day := result.get_string(1).to_int()
+	var month := result.get_string(2).to_int()
+	var year := result.get_string(3).to_int()
+	if year < 1 or month < 1 or month > 12 or day < 1:
+		return null
+	var days := [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+	if year % 400 == 0 or (year % 4 == 0 and year % 100 != 0):
+		days[1] = 29
+	if day > days[month - 1]:
+		return null
+	return Date.new(day, month, year)
+
+func _setup_date_inputs() -> void:
+	for index in range(2):
+		var edit: LineEdit = start_date_ledit if index == 0 else end_date_ledit
+		var prefix := "Start" if index == 0 else "End"
+		edit.editable = true
+		edit.focus_mode = Control.FOCUS_ALL
+		edit.text_changed.connect(_filter_date_characters.bind(edit))
+		edit.placeholder_text = "dd/mm/yyyy"
+		edit.tooltip_text = "Enter day/month/year, for example 29/02/2028, or use the calendar."
+		edit.text_submitted.connect(func(_text: String): _commit_date_input(index))
+		edit.focus_exited.connect(_commit_date_input.bind(index))
+		var hint := Label.new()
+		hint.add_theme_font_size_override("font_size", 11)
+		hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		$Control.add_child(hint)
+		date_hints.append(hint)
+		var origin := edit.position - Vector2(20, 0)
+		Hud._place_control(edit, Rect2(origin, Vector2(150, 32)))
+		var clear: Button = $Control.get_node("Clear" + prefix + "DateBtn")
+		clear.focus_mode = Control.FOCUS_ALL
+		clear.tooltip_text = "Clear date"
+		Hud._place_control(clear, Rect2(origin + Vector2(158, 0), Vector2(28, 32)))
+		var picker: TextureButton = $Control.get_node(prefix + "CalendarBtn")
+		picker.focus_mode = Control.FOCUS_ALL
+		picker.tooltip_text = "Choose date"
+		Hud._place_control(picker, Rect2(origin + Vector2(194, 0), Vector2(32, 32)))
+		Hud._place_control(hint, Rect2(origin + Vector2(0, 33), Vector2(230, 17)))
+	Hud._place_control($Control/TimespanInfoBtn,
+		Rect2($Control/StartDateLabel.position + Vector2(110, 0), Vector2(22, 22)))
+	_validate_dates(false)
+	_setup_settings_titles()
+	_layout_settings_screen()
+
+func _setup_settings_titles() -> void:
+	_setup_psamv_option()
+	if observation_title != null:
+		return
+	observation_title = Label.new()
+	observation_title.text = "Observation setup"
+	results_title = Label.new()
+	results_title.text = "Ephemeris results"
+	empty_results_label = Label.new()
+	empty_results_label.text = "Ephemeris data will appear here after a successful search."
+	empty_results_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	empty_results_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	empty_results_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	empty_results_label.custom_minimum_size = Vector2(520, 48)
+	empty_results_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	empty_results_label.modulate = Color(AETHER_THEME.TEXT_SECONDARY, 0.8)
+	empty_results_overlay = CenterContainer.new()
+	empty_results_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	empty_results_overlay.z_index = 10
+	empty_results_overlay.add_child(empty_results_label)
+	for title in [observation_title, results_title]:
+		title.add_theme_font_size_override("font_size", 18)
+		title.add_theme_color_override("font_color", AETHER_THEME.ACCENT_BRIGHT)
+	$Control.add_child(observation_title)
+	$Control.add_child(results_title)
+	$Control.add_child(empty_results_overlay)
+
+func _setup_psamv_option() -> void:
+	if $Control/TableSettings.has_node("cbPsAMV"):
+		return
+	var checkbox := CheckBox.new()
+	checkbox.name = "cbPsAMV"
+	checkbox.focus_mode = Control.FOCUS_NONE
+	checkbox.button_pressed = true
+	checkbox.tooltip_text = "Show the projected dust-tail direction returned by JPL Horizons."
+	checkbox.toggled.connect(_on_cb_psamv_toggled)
+	$Control/TableSettings.add_child(checkbox)
+	var label := Label.new()
+	label.name = "cbPsAMVLabel"
+	label.text = "Dust-tail direction (PsAMV)"
+	label.tooltip_text = "Position angle of the projected negative heliocentric velocity vector."
+	label.mouse_filter = Control.MOUSE_FILTER_PASS
+	$Control/TableSettings.add_child(label)
+
+func _layout_settings_screen() -> void:
+	if observation_title == null:
+		return
+	var viewport_size := get_viewport().get_visible_rect().size
+	$Control.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var left_x := viewport_size.x * 0.024
+	var left_width := viewport_size.x * 0.278
+	var top := maxf(66.0, viewport_size.y * 0.064)
+	var vertical_scale := clampf((viewport_size.y - 80.0) / 780.0, 0.78, 1.0)
+	var gap := 18.0 * vertical_scale
+	var search_height := 220.0 * vertical_scale
+	var orbital_height := 220.0 * vertical_scale
+	var table_height := 280.0 * vertical_scale
+	var orbital_top := top + search_height + gap
+	var table_top := orbital_top + orbital_height + gap
+
+	Hud._place_control($Control/SearchDataPanel, Rect2(left_x, top, left_width, search_height))
+	Hud._place_control($Control/OrbitalElemPanel, Rect2(left_x, orbital_top, left_width, orbital_height))
+	Hud._place_control($Control/TableSettingsPanel, Rect2(left_x, table_top, left_width, table_height))
+	Hud._place_control(observation_title, Rect2(left_x + 20, top + 10, left_width - 40, 28))
+
+	var label_x := left_x + 22.0
+	var label_width := left_width * 0.31
+	var field_x := left_x + left_width * 0.42
+	var right := left_x + left_width - 18.0
+	var row_height := 34.0
+	var first_row := top + 48.0
+	var row_gap := (search_height - 70.0) / 4.0
+	_layout_search_row($Control/CometSearchLabel, $Control/CometNameInfoBtn, first_row, label_x, label_width)
+	Hud._place_control($Control/SearchBar, Rect2(field_x, first_row, right - field_x - 48, row_height))
+	Hud._place_control($Control/SearchBtn, Rect2(right - 40, first_row, 40, row_height))
+	for row in range(2):
+		var y := first_row + row_gap * (row + 1)
+		var label: Label = $Control/StartDateLabel if row == 0 else $Control/EndDateLabel
+		var info: TextureButton = $Control/TimespanInfoBtn if row == 0 else null
+		_layout_search_row(label, info, y, label_x, label_width)
+		var edit: LineEdit = start_date_ledit if row == 0 else end_date_ledit
+		var clear: Button = $Control/ClearStartDateBtn if row == 0 else $Control/ClearEndDateBtn
+		var calendar: TextureButton = $Control/StartCalendarBtn if row == 0 else $Control/EndCalendarBtn
+		Hud._place_control(edit, Rect2(field_x, y, right - field_x - 84, row_height))
+		Hud._place_control(clear, Rect2(right - 76, y, 32, row_height))
+		Hud._place_control(calendar, Rect2(right - 36, y + 1, 34, 32))
+		if row < date_hints.size():
+			Hud._place_control(date_hints[row], Rect2(field_x, y + row_height, right - field_x, 16))
+	var step_y := first_row + row_gap * 3.0
+	_layout_search_row($Control/StepSizeLabel, $Control/StepsizeInfoBtn, step_y, label_x, label_width)
+	Hud._place_control($Control/StepSizeSanEdit, Rect2(right - 68, step_y, 68, row_height))
+	$Control/HSeparator.hide()
+	$Control/HSeparator2.hide()
+
+	_layout_orbital_card(left_x, left_width, orbital_top, orbital_height)
+	_layout_table_settings(left_x, left_width, table_top, table_height)
+
+	var results_x := left_x + left_width + 32.0
+	var results_width := viewport_size.x - results_x - 32.0
+	var results_height := viewport_size.y - top - 26.0
+	Hud._place_control($Control/JPLTablePanel, Rect2(results_x, top, results_width, results_height))
+	Hud._place_control(results_title, Rect2(results_x + 22, top + 12, results_width - 44, 30))
+	Hud._place_control($Control/EphemScroll, Rect2(results_x + 22, top + 50, results_width - 44, results_height - 116))
+	$Control/EphemScroll.scale = Vector2.ONE
+	Hud._place_control(empty_results_overlay, Rect2(results_x + 22, top + 50, results_width - 44, results_height - 116))
+	empty_results_overlay.visible = ephem_table.get_child_count() == 0
+	Hud._place_control($Control/ExportCSVBtn, Rect2(results_x + results_width - 208, top + results_height - 52, 186, 36))
+	Hud._place_control($Control/LoadingLabel, Rect2(results_x + results_width * 0.35, top + results_height * 0.45, results_width * 0.3, 42))
+	$Control/LoadingLabel.scale = Vector2.ONE
+
+func _layout_search_row(label: Label, info: TextureButton, y: float, x: float, width: float) -> void:
+	Hud._place_control(label, Rect2(x, y + 5, width, 26))
+	if info != null:
+		Hud._place_control(info, Rect2(x + width - 24, y + 5, 22, 22))
+
+func _layout_orbital_card(x: float, width: float, y: float, height: float) -> void:
+	Hud._place_control($Control/OrbitalElemLabel, Rect2(x + 20, y + 10, width - 52, 26))
+	Hud._place_control($Control/OrbitalInfoBtn, Rect2(x + width - 42, y + 10, 22, 22))
+	$Control/OrbitalElemLabel.add_theme_font_size_override("font_size", 17)
+	$Control/OrbitalElemLabel.add_theme_color_override("font_color", AETHER_THEME.ACCENT_BRIGHT)
+	var labels := [$Control/ECLabel, $Control/QRLabel, $Control/TPLabel, $Control/OMLabel, $Control/WLabel, $Control/INLabel]
+	var edits := [$Control/ECLineEdit, $Control/QRLineEdit, $Control/TPLineEdit, $Control/OMLineEdit, $Control/WLineEdit, $Control/INLineEdit]
+	var column_width := (width - 62.0) / 2.0
+	var row_step := (height - 44.0) / 3.0
+	for index in range(6):
+		var column := index % 2
+		var row := index / 2
+		var column_x := x + 20.0 + column * (column_width + 22.0)
+		var row_y := y + 40.0 + row * row_step
+		Hud._place_control(labels[index], Rect2(column_x, row_y, column_width, 20))
+		labels[index].horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		Hud._place_control(edits[index], Rect2(column_x, row_y + 20, column_width, 32))
+
+func _layout_table_settings(x: float, width: float, y: float, height: float) -> void:
+	Hud._place_control($Control/TableSettingsLabel, Rect2(x + 20, y + 10, width - 52, 26))
+	Hud._place_control($Control/TableSettingsInfoBtn, Rect2(x + width - 42, y + 10, 22, 22))
+	$Control/TableSettingsLabel.add_theme_font_size_override("font_size", 17)
+	$Control/TableSettingsLabel.add_theme_color_override("font_color", AETHER_THEME.ACCENT_BRIGHT)
+	Hud._place_control($Control/TableSettings, Rect2(x + 20, y + 42, width - 40, height - 52))
+	var checkbox_names := ["cbRaDec", "cbDelta", "cbSngAng", "cbHeliocentric", "cbSTO", "cbPlAng", "cbTrueAnomaly", "cbPsAMV", "cbSkyMotion"]
+	var label_names := ["cbRaDecLabel", "cbDeltaLabel", "cbSnAngLabel", "cbHeliocentricLabel", "cbSTOLabel", "cbPlAngLabel", "cbTrueAnomalyLabel", "cbPsAMVLabel", "cbSkyMotionLabel"]
+	var row_height: float = ($Control/TableSettings.size.y - 4.0) / checkbox_names.size()
+	for index in range(checkbox_names.size()):
+		var checkbox: CheckBox = $Control/TableSettings.get_node(checkbox_names[index])
+		var label: Label = $Control/TableSettings.get_node(label_names[index])
+		checkbox.scale = Vector2.ONE
+		label.scale = Vector2.ONE
+		Hud._place_control(checkbox, Rect2(0, index * row_height, 24, 24))
+		Hud._place_control(label, Rect2(32, index * row_height + 1, $Control/TableSettings.size.x - 32, 24))
+
+func _commit_date_input(index: int) -> void:
+	var edit: LineEdit = start_date_ledit if index == 0 else end_date_ledit
+	var parsed := parse_input_date(edit.text)
+	if parsed != null:
+		edit.text = "%02d/%02d/%04d" % [parsed.day(), parsed.month(), parsed.year()]
+		var picker = $Control.get_node("StartCalendarBtn" if index == 0 else "EndCalendarBtn")
+		picker.selected_date = Date.new(parsed.day(), parsed.month(), parsed.year())
+		picker.refresh_data()
+	_validate_dates(false)
+
+func _validate_dates(require_start: bool = true) -> bool:
+	start_date = parse_input_date(start_date_ledit.text)
+	end_date = parse_input_date(end_date_ledit.text)
+	var errors: Array[String] = ["", ""]
+	if start_date == null and (require_start or not start_date_ledit.text.strip_edges().is_empty()):
+		errors[0] = "Enter a valid date: dd/mm/yyyy"
+	if end_date == null and not end_date_ledit.text.strip_edges().is_empty():
+		errors[1] = "Enter a valid date: dd/mm/yyyy"
+	if start_date != null and end_date != null:
+		var start_key := start_date.year() * 10000 + start_date.month() * 100 + start_date.day()
+		var end_key := end_date.year() * 10000 + end_date.month() * 100 + end_date.day()
+		if end_key < start_key:
+			errors[1] = "End date must not precede start date"
+	for index in range(date_hints.size()):
+		var edit: LineEdit = start_date_ledit if index == 0 else end_date_ledit
+		date_hints[index].text = errors[index]
+		date_hints[index].add_theme_color_override("font_color", Color("e9827a"))
+		if errors[index].is_empty():
+			edit.remove_theme_stylebox_override("normal")
+		else:
+			var style := StyleBoxFlat.new()
+			style.bg_color = Color("0b202d")
+			style.border_color = Color("e9827a")
+			style.set_border_width_all(2)
+			style.set_corner_radius_all(4)
+			edit.add_theme_stylebox_override("normal", style)
+	return errors[0].is_empty() and errors[1].is_empty()
 var alpha_p: float = 0.0
 var delta_p: float = 0.0
 # var target = "C/2013 R1"
@@ -22,7 +281,7 @@ var api_url_designation := "https://ssd.jpl.nasa.gov/api/horizons_support.api"
 const SC := "%3B"
 
 # var quantities := "1,19,20,23"
-var quantities := "1,16,19,20,24,28,41,47"
+var quantities := "1,16,19,20,24,27,28,41,47"
 
 # options
 var options := {
@@ -33,6 +292,7 @@ var options := {
 	"STO": true,
 	"PlAngle": true,
 	"TrueAnomaly": true,
+	"PsAMV": true,
 	"SkyMotion": true
 }
 
@@ -52,6 +312,8 @@ var regex_params: Array[String] = [
 		"([+-]?\\d+\\.\\d+)", # Delta (single float value)
 		"([+-]?\\d+\\.\\d+)", # deldot (single float value) --- IGNORE ---
 		"([+-]?\\d+\\.\\d+)", # STO (single float value)
+		"([+-]?\\d+\\.\\d+)", # PsAng: projected extended Sun-to-target radius PA
+		"([+-]?\\d+\\.\\d+)", # PsAMV: projected negative heliocentric velocity PA
 		"([+-]?\\d+\\.\\d+)", # PlAngle (single float value)
 		"([+-]?\\d+\\.\\d+)", # True anomaly (single float value)
 		"([+-]?\\d+\\.\\d+)", # Sky motion (single float value) --- IGNORE ---
@@ -71,6 +333,8 @@ var ec_qr_tp_regex: RegEx = RegEx.new()
 var ec_qr_tp_compiled := ec_qr_tp_regex.compile("\\s*EC=\\s*([-+]?\\d*\\.\\d+)\\s*QR=\\s*([-+]?\\d*\\.\\d+)\\s*TP=\\s*([-+]?\\d*\\.\\d+)")
 
 func _ready() -> void:
+	call_deferred("_setup_date_inputs")
+	get_viewport().size_changed.connect(func(): call_deferred("_layout_settings_screen"))
 	http_request = HTTPRequest.new()
 	add_child(http_request)
 	http_request.request_completed.connect(self._http_request_completed)
@@ -81,6 +345,8 @@ func _ready() -> void:
 	
 ## 1.Send search request to get designation ID
 func _on_search_btn_pressed() -> void:
+	if not _validate_dates():
+		return
 	var query := search_bar.text
 	if query == "":
 		Util.create_popup("Error", "Please enter a valid target name or designation.")
@@ -197,7 +463,7 @@ func request_ephemeris(command_parameter: String) -> void:
 			"ANG_FORMAT": "DEG",
 			"QUANTITIES": "'%s'" % quantities
 		}
-	if end_date == null:
+	if end_date == null or end_date.date("YYYY-MM-DD") == start_date.date("YYYY-MM-DD"):
 		params["TLIST"] = "'%s 00:00'" % start_date.date("YYYY-MM-DD")
 	else:
 		params["START_TIME"] = "'%s 00:00'" % start_date.date("YYYY-MM-DD")
@@ -364,10 +630,12 @@ func parse_ephemeris(data: String) -> String:
 		"delta": result.get_string(9),
 		"delta_dot": result.get_string(10),
 		"sto": result.get_string(11),
-		"pl_ang": result.get_string(12),
-		"true_anomaly": result.get_string(13),
-		"sky_motion": result.get_string(14),
-		"sky_motion_pa": result.get_string(15)
+		"psang": result.get_string(12),
+		"psamv": result.get_string(13),
+		"pl_ang": result.get_string(14),
+		"true_anomaly": result.get_string(15),
+		"sky_motion": result.get_string(16),
+		"sky_motion_pa": result.get_string(17)
 		}
 		# print(entry)
 
@@ -385,8 +653,10 @@ func clear_container() -> void:
 	# adjust scroll to top
 	scroll_container.custom_minimum_size.y = 0
 	scroll_container.scroll_vertical = 0
+	_set_empty_results_visible(true)
 # Populate the container with tabular data from the ephemeris, retrieved from Nasa JPL API.
 func populate_container(data: Variant) -> void:
+	_set_empty_results_visible(false)
 	var HEADER := {
 		"date": "Date",
 		"time": "Time",
@@ -399,6 +669,7 @@ func populate_container(data: Variant) -> void:
 		"sun_distance_r": "Sun Distance R (AU)",
 		# "sun_r_dot": "Sun Distance R Dot",
 		"sto": "STO (Deg)",
+		"psamv": "PsAMV (Deg)",
 		"pl_ang": "Sky Plane Angle (Deg)",
 		"true_anomaly": "True Anomaly (Deg)",
 		# "sky_motion": "Sky Motion",
@@ -418,6 +689,8 @@ func populate_container(data: Variant) -> void:
 		# HEADER.erase("sun_r_dot")
 	if options["STO"] == false:
 		HEADER.erase("sto")
+	if options["PsAMV"] == false:
+		HEADER.erase("psamv")
 	if options["PlAngle"] == false:
 		HEADER.erase("pl_ang")
 	if options["TrueAnomaly"] == false:
@@ -426,7 +699,9 @@ func populate_container(data: Variant) -> void:
 		# HEADER.erase("sky_motion")
 		HEADER.erase("sky_motion_pa")
 	Util.jpl_data = data
-	Util.sky_motion_pa = float(data[0]["sky_motion_pa"])
+	Util.psang = float(data[0].get("psang", data[0].get("sun_pa", 0.0)))
+	Util.psamv = float(data[0].get("psamv", data[0].get("sky_motion_pa", 0.0)))
+	Util.sky_motion_pa = float(data[0].get("sky_motion_pa", Util.psamv))
 	
 	var date_str: String = str(data[0]["date"])
 	var time_str: String = str(data[0]["time"])
@@ -434,32 +709,59 @@ func populate_container(data: Variant) -> void:
 	time_str = time_str.substr(0, 2)
 	get_tree().call_group("switch_date", "switch_date_set_date", date_str + " " + time_str + ":00", true)
 	# print(data)
-	var header_string := ""
+	var column_width := maxf(150.0, (scroll_container.size.x - 20.0) / HEADER.size())
+	var header_panel := PanelContainer.new()
+	var header_style := StyleBoxFlat.new()
+	header_style.bg_color = AETHER_THEME.INPUT
+	header_style.border_color = AETHER_THEME.BORDER
+	header_style.set_border_width_all(1)
+	header_style.set_corner_radius_all(4)
+	header_panel.add_theme_stylebox_override("panel", header_style)
+	var header_row := HBoxContainer.new()
+	header_row.add_theme_constant_override("separation", 0)
 	for key: String in HEADER.keys():
-		header_string += "%-30s" % HEADER[key]
-	# print(header_string)
-	var header_label := Label.new()
-	header_label.text = header_string
-	ephem_table.add_child(header_label)
-	for entry: Dictionary in data:
-		var hbox := HBoxContainer.new()
+		header_row.add_child(_make_ephemeris_cell(str(HEADER[key]), column_width, true))
+	header_panel.add_child(header_row)
+	ephem_table.add_child(header_panel)
+	for row_index in range(data.size()):
+		var entry: Dictionary = data[row_index]
+		var row_panel := PanelContainer.new()
+		var row_style := StyleBoxFlat.new()
+		row_style.bg_color = Color(AETHER_THEME.PANEL if row_index % 2 == 0 else AETHER_THEME.INPUT, 0.72)
+		row_panel.add_theme_stylebox_override("panel", row_style)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 0)
 		for key: String in HEADER.keys():
-			var label := Label.new()
-			label.text = str(entry[key])
-			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			hbox.add_child(label)
-		ephem_table.add_child(hbox)
+			row.add_child(_make_ephemeris_cell(str(entry[key]), column_width, false))
+		row_panel.add_child(row)
+		ephem_table.add_child(row_panel)
 	# scroll_container.scroll_vertical = scroll_container.get_v_scrollbar().max_value
+
+func _set_empty_results_visible(show_empty: bool) -> void:
+	if empty_results_overlay != null:
+		empty_results_overlay.visible = show_empty
+
+func _make_ephemeris_cell(value: String, width: float, is_header: bool) -> Label:
+	var cell := Label.new()
+	cell.text = value
+	cell.tooltip_text = value
+	cell.custom_minimum_size = Vector2(width, 42 if is_header else 32)
+	cell.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cell.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	cell.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	cell.add_theme_font_size_override("font_size", 13 if is_header else 14)
+	cell.add_theme_color_override("font_color", AETHER_THEME.ACCENT_BRIGHT if is_header else AETHER_THEME.TEXT)
+	return cell
 
 
 func _on_start_calendar_btn_date_selected(date_obj: Date) -> void:
-	start_date = date_obj
-	start_date_ledit.text = date_obj.date("YYYY-MM-DD")
+	start_date_ledit.text = "%02d/%02d/%04d" % [date_obj.day(), date_obj.month(), date_obj.year()]
+	_commit_date_input(0)
 
 
 func _on_end_calendar_btn_date_selected(date_obj: Date) -> void:
-	end_date = date_obj
-	end_date_ledit.text = date_obj.date("YYYY-MM-DD")
+	end_date_ledit.text = "%02d/%02d/%04d" % [date_obj.day(), date_obj.month(), date_obj.year()]
+	_commit_date_input(1)
 
 
 func update_step_size(value: float) -> void:
@@ -470,9 +772,11 @@ func update_step_size(value: float) -> void:
 func _on_clear_start_date_btn_pressed() -> void:
 	start_date = null
 	start_date_ledit.text = ""
+	_validate_dates(false)
 func _on_clear_end_date_btn_pressed() -> void:
 	end_date = null
 	end_date_ledit.text = ""
+	_validate_dates(false)
 
 
 func _on_cb_ra_dec_toggled(toggled_on: bool) -> void:
@@ -503,6 +807,10 @@ func _on_cb_true_anomaly_toggled(toggled_on: bool) -> void:
 	options["TrueAnomaly"] = toggled_on
 
 
+func _on_cb_psamv_toggled(toggled_on: bool) -> void:
+	options["PsAMV"] = toggled_on
+
+
 func _on_cb_sky_motion_toggled(toggled_on: bool) -> void:
 	options["SkyMotion"] = toggled_on
 
@@ -510,12 +818,13 @@ func _on_cb_sky_motion_toggled(toggled_on: bool) -> void:
 func _on_export_csv_btn_pressed() -> void:
 	$Control/FileExplorer.file_mode = FileDialog.FILE_MODE_SAVE_FILE
 	$Control/FileExplorer.filters = ["*.csv;CSV File"]
+	SaveManager.prepare_file_dialog($Control/FileExplorer, "jpl_ephemeris.csv")
 	$Control/FileExplorer.popup_centered()
-	$Control/FileExplorer.current_file = "jpl_ephemeris.csv"
 	$Control/FileExplorer.visible = true
 	
 
 func _on_file_explorer_file_selected(path: String) -> void:
+	SaveManager.remember_file_directory(path)
 	# convert json data to csv
 	if Util.jpl_data == null or Util.jpl_data.size() == 0:
 		Util.create_popup("Error", "No ephemeris data to export.")
@@ -538,6 +847,8 @@ func _on_file_explorer_file_selected(path: String) -> void:
 		# HEADER["sun_r_dot"] = "Sun Distance R Dot"
 	if options["STO"] == true:
 		HEADER["sto"] = "STO (Deg)"
+	if options["PsAMV"] == true:
+		HEADER["psamv"] = "PsAMV (Deg)"
 	if options["PlAngle"] == true:
 		HEADER["pl_ang"] = "Sky Plane Angle (Deg)"
 	if options["TrueAnomaly"] == true:

@@ -13,6 +13,7 @@ func _ready() -> void:
 	if not is_instance_valid(scroll_container) or not is_instance_valid(content_node):
 		printerr("Scroll container or content node not correctly assigned")
 		return
+	get_node("../JetPanel").resized.connect(_update_scroll_container_height)
 	
 ## Update the scroll container height based on how many children (JetEntry) it has
 func _update_scroll_container_height() -> void:
@@ -21,9 +22,14 @@ func _update_scroll_container_height() -> void:
 	if not is_instance_valid(scroll_container) or not is_instance_valid(content_node):
 		return
 	var total_content_node_height := content_node.get_combined_minimum_size().y
-	var new_height: float = min(total_content_node_height, max_height)
+	var panel: Control = get_node("../JetPanel")
+	var bottom := panel.get_global_rect().end.y - 12.0
+	var available := (bottom - scroll_container.global_position.y) / scale.y
+	available -= $AddJetEntryBtn.get_combined_minimum_size().y + get_theme_constant("separation")
+	var new_height: float = min(total_content_node_height, min(max_height, max(40.0, available)))
 	if scroll_container.custom_minimum_size.y != new_height:
 		scroll_container.custom_minimum_size.y = new_height
+		size.y = get_combined_minimum_size().y
 	
 
 ## Called by Navbar._on_file_explorer_file_selected().
@@ -33,7 +39,22 @@ func save_data() -> void:
 	if SaveManager.config.has_section("jets"):
 		SaveManager.config.erase_section("jets")
 	for entry: JetEntry in content_node.get_children():
-		SaveManager.config.set_value("jets", str(entry.jet_id), [entry.speed, entry.latitude, entry.longitude, entry.diffusion, entry.color, entry.density])
+		SaveManager.config.set_value("jets", str(entry.jet_id), [entry.speed, entry.latitude, entry.longitude, entry.diffusion, entry.color, int(entry.density)])
+
+func _connect_entry_to_emitter(entry: JetEntry, emitter: Emitter) -> void:
+	entry.speed_edit.sanitized_edit_focus_exited.connect(emitter.update_speed)
+	entry.latitude_edit.sanitized_edit_focus_exited.connect(emitter.update_lat)
+	entry.longitude_edit.sanitized_edit_focus_exited.connect(emitter.update_long)
+	entry.density_edit.sanitized_edit_focus_exited.connect(emitter.update_dens)
+	entry.diffusion_edit.sanitized_edit_focus_exited.connect(emitter.update_diff)
+	entry.color_edit.color_changed.connect(emitter.update_color)
+	# The emitter is not in the 3D tree yet, so initialise its data directly.
+	emitter.speed = entry.speed
+	emitter.latitude = entry.latitude
+	emitter.longitude = entry.longitude
+	emitter.density = entry.density
+	emitter.diffusion = entry.diffusion
+	emitter.color = entry.color
 
 
 ## Called by Navbar._on_file_explorer_file_selected().
@@ -56,13 +77,6 @@ func load_data() -> void:
 			var emitter := emitter_scene.instantiate() as Emitter
 
 
-			new_entry.speed_edit.sanitized_edit_focus_exited.connect(emitter.update_speed)
-			new_entry.latitude_edit.sanitized_edit_focus_exited.connect(emitter.update_lat)
-			new_entry.longitude_edit.sanitized_edit_focus_exited.connect(emitter.update_long)
-			new_entry.density_edit.sanitized_edit_focus_exited.connect(emitter.update_dens)
-			new_entry.diffusion_edit.sanitized_edit_focus_exited.connect(emitter.update_diff)
-			new_entry.color_edit.color_changed.connect(emitter.update_color)
-
 			new_entry.set_speed(loaded_entry[0])
 			new_entry.set_latitude(loaded_entry[1])
 			new_entry.set_longitude(loaded_entry[2])
@@ -70,19 +84,10 @@ func load_data() -> void:
 			new_entry.set_color(loaded_entry[4])
 			
 			var loaded_n_points := old_global_n_points
-			print("Old density n/step: ", loaded_n_points)
 			if loaded_entry.size() > 5:
 				loaded_n_points = loaded_entry[5]
 			new_entry.set_density(loaded_n_points)
-			print("density n/step: ", loaded_n_points)
-			
-			print("Entry density n/step: ", new_entry.density)
-			emitter.speed = new_entry.speed
-			emitter.latitude = new_entry.latitude
-			emitter.longitude = new_entry.longitude
-			emitter.density = new_entry.density
-			emitter.diffusion = new_entry.diffusion
-			emitter.color = new_entry.color
+			_connect_entry_to_emitter(new_entry, emitter)
 			emitter.jet_id = new_entry.jet_id
 
 			# Saving (jet_entry,emitter) to a dictionary so that later on I can remove both entry(HUD) and the emitter node
@@ -113,14 +118,7 @@ func _on_add_jet_entry_btn_pressed() -> void:
 
 	# connecting the emitter to SanitizedEdit signals so that whenever one of those SanitizedEdit value changes,
 	# the corresponding update method is called on the emitter
-	new_entry.speed_edit.sanitized_edit_focus_exited.connect(emitter.update_speed)
-	new_entry.latitude_edit.sanitized_edit_focus_exited.connect(emitter.update_lat)
-	new_entry.longitude_edit.sanitized_edit_focus_exited.connect(emitter.update_long)
-	new_entry.density_edit.sanitized_edit_focus_exited.connect(emitter.update_dens)
-	new_entry.diffusion_edit.sanitized_edit_focus_exited.connect(emitter.update_diff)
-	new_entry.color_edit.color_changed.connect(emitter.update_color)
-	# updating color
-	emitter.update_color(new_entry.color)
+	_connect_entry_to_emitter(new_entry, emitter)
 
 	# Saving (jet_entry,emitter) to a dictionary so that later on I can remove both entry(HUD) and the emitter node
 	entry_emitter_dict.set(new_entry.get_instance_id(), emitter.get_instance_id())

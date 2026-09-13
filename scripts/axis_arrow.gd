@@ -20,7 +20,7 @@ func _ready() -> void:
 	#set_height(height)
 
 func set_axis_type(type: AXIS_TYPE) -> void:
-	const ALPHA: float = 0.95
+	const ALPHA: float = 1.0
 	axis_type = type
 	match axis_type:
 		AXIS_TYPE.X: # pitch axis

@@ -52,8 +52,10 @@ custom_minimum_size = Vector2(48, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
-text = "0"
+tooltip_text = "Total particles emitted by this jet at each integration step."
+text = "1"
 alignment = 2
+lower_bound = 1.0
 higher_bound = 35.0
 no_decimal = true
 

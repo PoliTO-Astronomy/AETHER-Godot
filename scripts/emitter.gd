@@ -19,7 +19,8 @@ var jet_id: int
 var speed: float
 var latitude: float
 var longitude: float
-var density: int
+## Total number of particles emitted by this jet at each integration step.
+var density: int = 1
 var diffusion: float
 var color: Color
 
@@ -95,8 +96,6 @@ func _ready() -> void:
 	update_acceleration()
 
 	# get_parent().debug_sphere.global_position = global_transform.origin + norm * 0.5 * 3
-	# print("albedo:%f p:%f d:%f D:%f  a:%.10f" % [Util.albedo, Util.particle_density, Util.particle_diameter, Util.sun_comet_distance, a])
-
 func init_multimesh(multi_mesh_istance: MultiMeshInstance3D) -> void:
 	# init multimesh object
 	multi_mesh_istance.multimesh = MultiMesh.new()
@@ -184,6 +183,8 @@ func instant_simulation(_n_steps: int, _angle_per_step: float, jpl_import: Dicti
 	mm_emitter.multimesh.instance_count = 0
 	mm_emitter.multimesh.use_colors = true
 	mm_emitter.multimesh.use_custom_data = false
+	if density <= 0:
+		return
 
 	var particle_transforms: Array[Transform3D] = []
 	var _normal_dirs: Array[Vector3] = []
@@ -214,23 +215,25 @@ func instant_simulation(_n_steps: int, _angle_per_step: float, jpl_import: Dicti
 		var comet_basis: Basis = get_parent().global_transform.basis
 		comet_basis = comet_basis * Basis(Vector3.UP, deg_to_rad((i + 1) * _angle_per_step))
 		var _normal := update_norm2(initial_norm, comet_basis)
-		_normal_dirs.append(_normal)
 		# continue to next 
 		if not is_lit_math2(i, _angle_per_step, _normal):
 			continue
+		_normal_dirs.append(_normal)
 		time_alive2.append(i) # time alive is the number of steps left until the end of simulation
 
 		# _n_steps - i so that it correctly defines the time the ith particle has been alive (ie: i=0, nsteps=100 -> particle alive for 100)
 		# just "i" would've worked just fine but it wasn't logically correct
 		var ith_transform := _accelerate_particle2(_n_steps - i, _normal)
 		particle_transforms.append(ith_transform)
-		# this is to avoid showing particles inside the diffusion cloud sphere
+		# The central trajectory counts as one of the particles emitted per step.
+		_append_data_to_mm_buffer(mm_buffer, ith_transform, color)
 		if diffusion <= 0:
-			_append_data_to_mm_buffer(mm_buffer, ith_transform, color)
+			for _particle_index in range(1, density):
+				_append_data_to_mm_buffer(mm_buffer, ith_transform, color)
 
 	print("buffer_size: %d" % mm_buffer.size())
 	# numerical integration to reconstruct diffusion particles
-	if diffusion > 0:
+	if density > 1 and diffusion > 0:
 		@warning_ignore("integer_division")
 		var SUBSTEPS: int = clamp(_n_steps / 10, 10, 25)
 		for idx in range(particle_transforms.size()):
@@ -289,13 +292,12 @@ func _accelerate_particle2(time_alive2: int, _normal_dir: Vector3) -> Transform3
 	return final_global_transform
 	
 func _generate_diffusion_particles2(travelled_space: float, particle_origin: Vector3) -> Array[Transform3D]:
-	if density <= 0:
-		# return # no diffusion particles to generate
+	if density <= 1:
 		return []
 	var diffusion_particles: Array[Transform3D] = []
 	var pc_radius := travelled_space * (diffusion / 100) * randf() # pointcloud radius based on total space travelled by the particle and diffusion factor
 	# print("Radius:%f" % pc_radius)
-	for i in range(density):
+	for i in range(density - 1):
 		# generating a random position around the particle
 		var new_pos := Util.generate_gaussian_vector(0, 1, pc_radius)
 		diffusion_particles.append(Transform3D(Basis(), particle_origin + new_pos))
@@ -321,20 +323,21 @@ func _append_data_to_mm_buffer(buffer: PackedFloat32Array, transf: Transform3D, 
 	buffer.append(_color.b)
 	buffer.append(_color.a)
 func tick_optimized(_n_iteration: int) -> void:
+	if density <= 0:
+		return
 	# moving each particle
-	for i in range(0, mm_emitter.multimesh.visible_instance_count, density + 1):
-		## accelerating only main particles, so every Util.n_points-th particle
+	for i in range(0, mm_emitter.multimesh.visible_instance_count, density):
+		## Accelerate the central particle of each emission group.
 		_accelerate_particle(i)
 		_generate_diffusion_particles(i)
 		
 	# if _is_lit:
 	# whether to spawn a new particle or not
 	if is_lit_math():
-		# incrementing number of maximum drawn particles (to simulate spawning them)
-		var last_id := mm_emitter.multimesh.visible_instance_count + 1
-		if last_id < mm_emitter.multimesh.instance_count:
-			mm_emitter.multimesh.visible_instance_count = last_id + density
-		_spawn_particle(last_id)
+		var first_id := mm_emitter.multimesh.visible_instance_count
+		if first_id + density <= mm_emitter.multimesh.instance_count:
+			_spawn_particle(first_id)
+			mm_emitter.multimesh.visible_instance_count = first_id + density
 	update_norm()
 
 
@@ -378,41 +381,31 @@ func _accelerate_particle(i: int) -> void:
 	mm_emitter.multimesh.set_instance_transform(i, instance_local_transform)
 ## TODO: refactor so that there's only one function that accelerates the particle
 
-## Generate Util.n_points diffusion particles around the current particle 
+## Generate the remaining particles of an emission group around its central particle.
 ## It doesn't update multimesh.visible_instance_count!
 func _generate_diffusion_particles(i: int) -> void:
-	if density <= 0:
+	if density <= 1:
 		return # no diffusion particles to generate
 	var center_particle := mm_emitter.multimesh.get_instance_transform(i)
 	var center_particle_color := mm_emitter.multimesh.get_instance_color(i)
 	var pc_radius := total_space[i] * (diffusion / 100) * randf() # pointcloud radius based on total space travelled by the particle and diffusion factor
 	# TODO: maybe use compute shader to generate the particles around the center particle
-	for j in range(1, density + 1):
+	for j in range(1, density):
 		# generating a random position around the particle
 		var new_pos := Util.generate_gaussian_vector(0, 1, pc_radius)
 		mm_emitter.multimesh.set_instance_transform(i + j, Transform3D(Basis(), center_particle.origin + new_pos))
 		mm_emitter.multimesh.set_instance_color(i + j, center_particle_color)
 
-	# mm_emitter.multimesh.visible_instance_count += Util.n_points
-## Spawns a new particle in the multimesh at the current position of the emitter. 
-## The id of the particle is the last id -1  of the multimesh.
+## Spawns a new particle group in the multimesh at the current emitter position.
 ## It doesn't update multimesh.visible_instance_count!
-func _spawn_particle(last_id: int) -> void:
-	# change color of particle based on emitter color
-	mm_emitter.multimesh.set_instance_color(last_id - 1, color)
-	# assign the normal direction to the particle
-	mm_emitter.multimesh.set_instance_custom_data(last_id - 1, Color(norm.x, norm.y, norm.z))
-	normal_dirs.append(norm)
-
+func _spawn_particle(first_id: int) -> void:
 	var _initial_position := global_position
-
-	global_positions.append(_initial_position)
-	initial_positions.append(_initial_position)
-	time_alive.append(0)
-	particle_speeds.append(speed)
-	total_space.append(0)
-
-	for i in range(density):
+	var initial_transform := Transform3D(Basis(Vector3.UP, Vector3.LEFT, Vector3.FORWARD), Vector3.ZERO)
+	for particle_offset in range(density):
+		var particle_id := first_id + particle_offset
+		mm_emitter.multimesh.set_instance_color(particle_id, color)
+		mm_emitter.multimesh.set_instance_custom_data(particle_id, Color(norm.x, norm.y, norm.z))
+		mm_emitter.multimesh.set_instance_transform(particle_id, initial_transform)
 		time_alive.append(0)
 		global_positions.append(_initial_position)
 		initial_positions.append(_initial_position)
@@ -420,25 +413,20 @@ func _spawn_particle(last_id: int) -> void:
 		particle_speeds.append(speed)
 		total_space.append(0)
 
-	mm_emitter.multimesh.set_instance_transform(last_id - 1, Transform3D(Basis(Vector3.UP, Vector3.LEFT, Vector3.FORWARD), Vector3.ZERO))
-
-## Computes acceleration(in m/s^2) based on particle density, particle radius, particle albedo, solar pressure etc
-## It uses the following formula: a = 3\*P/(4\*d/2\*p) where
-## d, p and alpha are particle diameter, particle density and albedo
-## P = eps \* (2-alpha) 	 and eps = I/c = L_sun/(4\*PI\*c\*D^2) is the pressure radiation
-## D is the sun-comet distance and c is the light speed and L_sun is the sun luminosity (J/s)
+## Computes radiation-pressure acceleration and beta with Qpr = 1.
+## Optical albedo is not part of this calculation.
 func update_acceleration() -> void:
-	# Ls / 4PI * c *(AU*sun_comet_distance)^2
-	var eps: float = Util.SUN_LUMINOSITY / ((4 * PI) * Util.LIGHT_SPEED * pow(Util.AU * Util.sun_comet_distance, 2))
-	var P: float = eps * (1 + Util.albedo)
-	# # P * 3 / (4 * d/2 * p)
-	var _a: float = P * 3.0 / (4.0 * ((Util.particle_diameter / 1000.0) / 2.0) * (Util.particle_density * 1000.0))
-	Util.accel_val_line_edit.text = str(_a)
-	# var beta: float = Util.GRAVITATIONAL_CONSTANT * Util.SUN_MASS / pow(Util.sun_comet_distance * Util.AU, 2)
-	var beta: float = _a / (Util.GRAVITATIONAL_CONSTANT * Util.SUN_MASS / pow(Util.sun_comet_distance * Util.AU, 2))
-	Util.beta_val_line_edit.text = str(beta)
-	print("acceleration: %.10f m/s^2" % _a)
-	self.a = _a
+	var values := Util.calculate_dust_radiation(
+		Util.particle_diameter, Util.particle_density, Util.sun_comet_distance)
+	if values.is_empty():
+		a = 0.0
+		Util.accel_val_line_edit.text = "N/A"
+		Util.beta_val_line_edit.text = "N/A"
+		return
+	a = float(values["acceleration"])
+	Util.accel_val_line_edit.text = String.num(a, 10)
+	Util.beta_val_line_edit.text = String.num(float(values["beta"]), 10)
+	if Util.PRINT_UPDATE_METHOD: print("Acceleration: %.10f m/s²" % a)
 
 func update_initial_norm(_lat: float, _long: float) -> void:
 	var lat_rad := deg_to_rad(_lat)
@@ -462,10 +450,7 @@ func update_norm2(v: Vector3, b: Basis) -> Vector3:
 	return result.normalized()
 
 func set_number_particles(num: int) -> void:
-	if density > 0:
-		num_particles = num * (density + 1)
-	else:
-		num_particles = num
+	num_particles = num * maxi(density, 0)
 	mm_emitter.multimesh.instance_count = num_particles
 
 # Cleanup methods
@@ -527,9 +512,9 @@ func update_long(long: float) -> void:
 	position = new_pos
 	update_initial_norm(latitude, longitude)
 	# get_parent().debug_sphere.global_position = global_transform.origin + norm * 0.5 * 3
-func update_dens(_density: int) -> void:
-	if Util.PRINT_UPDATE_METHOD: print("Updated density:%d"%_density)
-	density = _density
+func update_dens(_density: float) -> void:
+	density = maxi(roundi(_density), 1)
+	if Util.PRINT_UPDATE_METHOD: print("Updated particles per step:%d" % density)
 	pass
 func update_diff(_diffusion: float) -> void:
 	if Util.PRINT_UPDATE_METHOD: print("Updated diffusion:%f"%_diffusion)

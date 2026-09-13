@@ -26,9 +26,9 @@ var longitude: float = 0:
 	get:
 		return longitude_edit.property_value
 var prev_long: float = 0
-var density: float = 0:
+var density: int = 1:
 	get:
-		return density_edit.property_value
+		return int(density_edit.property_value)
 var prev_dens: float = 0
 var diffusion: float = 0:
 	get:
@@ -60,12 +60,12 @@ func _ready() -> void:
 	color_picker.color_modes_visible = false
 	color_picker.sampler_visible = false
 
-	# Debug only
-	$SpeedEdit.text = str(0)
-	$LatitudeEdit.text = str(0.0)
-	$LongitudeEdit.text = str(0.0)
-	$DensityEdit.text = str(0)
-	$DiffusionEdit.text = str(0)
+	# Initialise both the displayed text and the numeric backing values.
+	speed_edit.set_value(0.0)
+	latitude_edit.set_value(0.0)
+	longitude_edit.set_value(0.0)
+	density_edit.set_value(1.0)
+	diffusion_edit.set_value(0.0)
 	$ColorPickerButton.color = Color(randf(), randf(), randf())
 	
 
@@ -82,8 +82,7 @@ func set_longitude(value: float) -> void:
 	longitude = value
 	longitude_edit.set_value(value)
 func set_density(value: float) -> void:
-	density = value
-	density_edit.set_value(value)
+	density_edit.set_value(maxi(1, roundi(value)))
 func set_diffusion(value: float) -> void:
 	diffusion = value
 	diffusion_edit.set_value(value)

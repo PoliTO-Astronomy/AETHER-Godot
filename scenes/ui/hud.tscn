@@ -37,10 +37,10 @@
 [ext_resource type="Texture2D" uid="uid://b3y4qbkn32kwu" path="res://Icon/united-kingdom.png" id="29_lptj4"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qmm8d"]
-bg_color = Color(0, 0.286, 0.33, 1)
+bg_color = Color(0.0627451, 0.164706, 0.227451, 1)
 border_width_left = 2
 border_width_bottom = 2
-border_color = Color(0.11, 0.11, 0.11, 1)
+border_color = Color(0.196078, 0.392157, 0.478431, 1)
 border_blend = true
 corner_radius_top_left = 5
 corner_radius_top_right = 5
@@ -50,18 +50,17 @@ corner_detail = 10
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_b6swc"]
 resource_local_to_scene = true
-bg_color = Color(0, 0.286275, 0.329412, 1)
+bg_color = Color(0.0627451, 0.164706, 0.227451, 1)
 border_width_left = 1
-border_width_bottom = 1
-border_color = Color(0, 0.112667, 0.13, 1)
+border_color = Color(0.196078, 0.392157, 0.478431, 1)
 corner_radius_top_left = 5
 corner_radius_top_right = 5
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pkwgd"]
-bg_color = Color(0, 0.424667, 0.49, 1)
+bg_color = Color(0.0862745, 0.258824, 0.333333, 1)
 border_width_left = 2
 border_width_bottom = 2
-border_color = Color(1.26343e-07, 0.113043, 0.136454, 1)
+border_color = Color(0.196078, 0.392157, 0.478431, 1)
 border_blend = true
 corner_radius_top_left = 5
 corner_radius_top_right = 5
@@ -100,7 +99,7 @@ anchor_top = -0.015534
 anchor_right = 1.01667
 anchor_bottom = 1.03301
 focus_mode = 2
-color = Color(0, 0.210733, 0.213576, 1)
+color = Color(0.027451, 0.0784314, 0.121569, 1)
 metadata/_edit_use_anchors_ = true
 
 [node name="Body" type="CanvasLayer" parent="." groups=["disable", "enable"]]
@@ -198,6 +197,17 @@ focus_mode = 0
 icon = ExtResource("3_vuvg6")
 icon_alignment = 1
 metadata/_edit_use_anchors_ = true
+
+[node name="OverlayColorButton" type="Button" parent="Body/TabButtons" groups=["model_tab"]]
+visible = false
+layout_mode = 0
+anchor_left = 0.41
+anchor_top = 20.0212
+anchor_right = 0.505
+anchor_bottom = 20.8687
+tooltip_text = "Switch grid, date and scale between white and black, including exported images"
+toggle_mode = true
+text = "Overlays: White"
 
 [node name="ToggleNucleusGridBtn" type="Button" parent="Body/TabButtons" groups=["model_tab"]]
 visible = false
@@ -573,8 +583,8 @@ valid_zero = true
 
 [node name="Slider" parent="Body/CometTab/Control/EditCometIncl" index="0"]
 visible = false
-offset_left = 28592.6
-offset_right = 28752.6
+offset_left = 29550.5
+offset_right = 29710.5
 scale = Vector2(-1, 1)
 min_value = -90.0
 max_value = 90.0
@@ -725,7 +735,7 @@ anchor_top = 1.17424
 anchor_right = 2.70619
 anchor_bottom = 1.29545
 focus_mode = 0
-theme_override_colors/font_uneditable_color = Color(0.87451, 0.87451, 0.87451, 1)
+theme_override_colors/font_uneditable_color = Color(0.717647, 0.780392, 0.811765, 1)
 editable = false
 metadata/_edit_use_anchors_ = true
 
@@ -751,7 +761,7 @@ anchor_top = 1.31439
 anchor_right = 2.70619
 anchor_bottom = 1.43561
 focus_mode = 0
-theme_override_colors/font_uneditable_color = Color(0.87451, 0.87451, 0.87451, 1)
+theme_override_colors/font_uneditable_color = Color(0.717647, 0.780392, 0.811765, 1)
 editable = false
 metadata/_edit_use_anchors_ = true
 
@@ -780,7 +790,7 @@ anchor_bottom = 1.29924
 offset_right = 3.05176e-05
 offset_bottom = 3.05176e-05
 focus_mode = 0
-theme_override_colors/font_uneditable_color = Color(0.87451, 0.87451, 0.87451, 1)
+theme_override_colors/font_uneditable_color = Color(0.717647, 0.780392, 0.811765, 1)
 editable = false
 metadata/_edit_use_anchors_ = true
 
@@ -805,7 +815,7 @@ anchor_top = 1.31439
 anchor_right = 2.03608
 anchor_bottom = 1.43561
 focus_mode = 0
-theme_override_colors/font_uneditable_color = Color(0.87451, 0.87451, 0.87451, 1)
+theme_override_colors/font_uneditable_color = Color(0.717647, 0.780392, 0.811765, 1)
 editable = false
 metadata/_edit_use_anchors_ = true
 
@@ -953,7 +963,7 @@ anchor_top = 0.284091
 anchor_right = 1.23196
 anchor_bottom = 0.405303
 focus_mode = 0
-theme_override_colors/font_uneditable_color = Color(0.87451, 0.87451, 0.87451, 1)
+theme_override_colors/font_uneditable_color = Color(0.717647, 0.780392, 0.811765, 1)
 editable = false
 metadata/_edit_use_anchors_ = true
 
@@ -1000,6 +1010,7 @@ anchor_bottom = 1.93569
 offset_right = 1.52588e-05
 grow_horizontal = 2
 grow_vertical = 2
+tooltip_text = "Optical albedo. Stored as a dust property; it is not used in the Beta calculation."
 text = "0"
 resize_type = &"albedo"
 higher_bound = 1.0
@@ -1014,6 +1025,7 @@ anchor_bottom = 1.8879
 offset_right = 6.70001
 offset_bottom = 2.30002
 scale = Vector2(0.9, 0.9)
+tooltip_text = "Optical property, excluded from the Beta calculation"
 text = "Albedo"
 metadata/_edit_use_anchors_ = true
 
@@ -1076,7 +1088,7 @@ anchor_right = 1.23196
 anchor_bottom = 2.125
 offset_bottom = 6.10352e-05
 focus_mode = 0
-theme_override_colors/font_uneditable_color = Color(0.87451, 0.87451, 0.87451, 1)
+theme_override_colors/font_uneditable_color = Color(0.717647, 0.780392, 0.811765, 1)
 editable = false
 metadata/_edit_use_anchors_ = true
 
@@ -1259,8 +1271,7 @@ anchor_left = 0.783505
 anchor_top = 1.52311
 anchor_right = 0.907216
 anchor_bottom = 1.61402
-tooltip_text = "Enter estimated ranges of dust properties (size: 0.001 – 1.00 mm, density: 0.00-5.00 g/cm3, albedo 0.01-2.00)​.
-Beta and Acceleration calculated automatically by software"
+tooltip_text = "Enter estimated dust properties. Beta and acceleration are calculated from diameter, density and Sun distance; albedo is excluded."
 focus_mode = 1
 texture_normal = ExtResource("25_27rlx")
 metadata/_edit_use_anchors_ = true
@@ -1302,6 +1313,32 @@ offset_left = -0.00012207
 tooltip_text = "Manually change date or hour according to selected time span or plays animation. Nucleus and comet models will update accordingly.​"
 focus_mode = 1
 texture_normal = ExtResource("25_27rlx")
+metadata/_edit_use_anchors_ = true
+
+[node name="NumRotationEdit" parent="Body/CometTab/Control" instance=ExtResource("6_oj5la")]
+layout_mode = 1
+anchor_left = 2.24
+anchor_top = 0.685607
+anchor_right = 2.6
+anchor_bottom = 0.837122
+tooltip_text = "Number of nucleus rotations included in the model"
+text = "0"
+resize_type = &"num_rotation"
+lower_bound = 0.1
+higher_bound = -1.0
+
+[node name="NumRotationLabel" type="Label" parent="Body/CometTab/Control"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 1.12
+anchor_top = 0.685607
+anchor_right = 2.2
+anchor_bottom = 0.837122
+tooltip_text = "Number of rotations"
+mouse_filter = 0
+text = "Number rotations"
+vertical_alignment = 1
+autowrap_mode = 2
 metadata/_edit_use_anchors_ = true
 
 [node name="HoldStartTimer" type="Timer" parent="Body/CometTab"]
@@ -1411,7 +1448,8 @@ custom_minimum_size = Vector2(48, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 14
-text = "Density (n/step)"
+tooltip_text = "Total number of particles emitted by each jet per integration step"
+text = "Particles (n/step)"
 horizontal_alignment = 1
 autowrap_mode = 2
 metadata/_edit_use_anchors_ = true
@@ -1477,7 +1515,8 @@ anchor_top = 57.6667
 anchor_right = 42.9999
 anchor_bottom = 60.4849
 offset_bottom = 6.10352e-05
-text = "0"
+tooltip_text = "Time interval between two dust-emission steps. Minimum: 0.5 minutes."
+text = "5.0"
 resize_type = &"jet_rate"
 lower_bound = 0.5
 higher_bound = -1.0
@@ -1489,13 +1528,13 @@ anchor_left = 25.231
 anchor_top = 57.2122
 anchor_right = 38.539
 anchor_bottom = 60.8485
-tooltip_text = "Jet emission rate in minutes"
+tooltip_text = "Time interval between two dust-emission steps. Minimum: 0.5 minutes."
 mouse_filter = 0
-text = "Integration step  (min)"
+text = "Integration step (min)"
 vertical_alignment = 1
 metadata/_edit_use_anchors_ = true
 
-[node name="SimTab" type="CanvasLayer" parent="Body" groups=["i", "load", "model_tab", "n_points", "phi", "save", "true_anomaly"]]
+[node name="SimTab" type="CanvasLayer" parent="Body" groups=["i", "load", "model_tab", "phi", "save", "true_anomaly"]]
 layer = 3
 visible = false
 script = ExtResource("7_h022r")
@@ -1523,33 +1562,6 @@ mouse_filter = 1
 theme_override_styles/panel = SubResource("StyleBoxFlat_pkwgd")
 metadata/_edit_use_anchors_ = true
 
-[node name="NumRotationEdit" parent="Body/SimTab/Control" instance=ExtResource("6_oj5la")]
-layout_mode = 1
-anchor_left = 39.2308
-anchor_top = 22.7273
-anchor_right = 42.9228
-anchor_bottom = 25.5455
-text = "0"
-resize_type = &"num_rotation"
-lower_bound = 0.1
-higher_bound = -1.0
-
-[node name="NPointsEdit" parent="Body/SimTab/Control" instance=ExtResource("6_oj5la")]
-visible = false
-layout_mode = 1
-anchor_left = 67.0004
-anchor_top = 13.1818
-anchor_right = 70.6143
-anchor_bottom = 16.0
-offset_left = -0.00012207
-offset_top = -6.10352e-05
-offset_bottom = -0.000427246
-text = "1"
-resize_type = &"n_points"
-lower_bound = 1.0
-higher_bound = 35.0
-no_decimal = true
-
 [node name="AccelValLineEdit" type="LineEdit" parent="Body/SimTab/Control" groups=["model_tab"]]
 layout_mode = 1
 anchors_preset = -1
@@ -1558,7 +1570,7 @@ anchor_top = 53.8181
 anchor_right = 43.8461
 anchor_bottom = 56.6363
 focus_mode = 0
-theme_override_colors/font_uneditable_color = Color(0.87451, 0.87451, 0.87451, 1)
+theme_override_colors/font_uneditable_color = Color(0.717647, 0.780392, 0.811765, 1)
 editable = false
 metadata/_edit_use_anchors_ = true
 
@@ -1616,32 +1628,6 @@ tooltip_text = "Frequency of rotation in hours"
 mouse_filter = 0
 text = "Rot. Period (h)"
 vertical_alignment = 1
-metadata/_edit_use_anchors_ = true
-
-[node name="NumRotationLabel" type="Label" parent="Body/SimTab/Control"]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 30.6923
-anchor_top = 21.6364
-anchor_right = 37.9231
-anchor_bottom = 26.0909
-tooltip_text = "Number of rotations"
-mouse_filter = 0
-text = "Number rotations"
-vertical_alignment = 1
-autowrap_mode = 2
-metadata/_edit_use_anchors_ = true
-
-[node name="NPointsLabel" type="Label" parent="Body/SimTab/Control"]
-visible = false
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 47.8464
-anchor_top = 13.4545
-anchor_right = 66.0774
-anchor_bottom = 15.5454
-offset_right = 0.00012207
-text = "N. particles emitted per step"
 metadata/_edit_use_anchors_ = true
 
 [node name="AccelValLabel" type="Label" parent="Body/SimTab/Control"]
@@ -1868,7 +1854,7 @@ anchor_top = 0.425153
 anchor_right = 5.1245
 anchor_bottom = 1.22515
 focus_mode = 0
-theme_override_colors/font_uneditable_color = Color(0.87451, 0.87451, 0.87451, 1)
+theme_override_colors/font_uneditable_color = Color(0.717647, 0.780392, 0.811765, 1)
 editable = false
 metadata/_edit_use_anchors_ = true
 
@@ -2025,7 +2011,7 @@ anchor_top = 4.025
 anchor_right = 10.325
 anchor_bottom = 4.8
 focus_mode = 0
-theme_override_colors/font_uneditable_color = Color(0.87451, 0.87451, 0.87451, 1)
+theme_override_colors/font_uneditable_color = Color(0.717647, 0.780392, 0.811765, 1)
 theme_override_constants/minimum_character_width = 0
 editable = false
 metadata/_edit_use_anchors_ = true
@@ -2048,7 +2034,7 @@ anchor_top = 4.925
 anchor_right = 8.125
 anchor_bottom = 5.7
 focus_mode = 0
-theme_override_colors/font_uneditable_color = Color(0.87451, 0.87451, 0.87451, 1)
+theme_override_colors/font_uneditable_color = Color(0.717647, 0.780392, 0.811765, 1)
 theme_override_constants/minimum_character_width = 0
 editable = false
 metadata/_edit_use_anchors_ = true
@@ -2061,7 +2047,7 @@ anchor_top = 4.925
 anchor_right = 10.325
 anchor_bottom = 5.7
 focus_mode = 0
-theme_override_colors/font_uneditable_color = Color(0.87451, 0.87451, 0.87451, 1)
+theme_override_colors/font_uneditable_color = Color(0.717647, 0.780392, 0.811765, 1)
 theme_override_constants/minimum_character_width = 0
 editable = false
 metadata/_edit_use_anchors_ = true
@@ -2258,7 +2244,7 @@ anchor_top = 0.081254
 anchor_right = 0.732674
 anchor_bottom = 0.162508
 focus_mode = 0
-theme_override_colors/font_uneditable_color = Color(0.87451, 0.87451, 0.87451, 1)
+theme_override_colors/font_uneditable_color = Color(0.717647, 0.780392, 0.811765, 1)
 editable = false
 metadata/_edit_use_anchors_ = true
 
@@ -2311,7 +2297,7 @@ anchor_right = 0.732674
 anchor_bottom = 0.298804
 offset_bottom = 1.52588e-05
 focus_mode = 0
-theme_override_colors/font_uneditable_color = Color(0.87451, 0.87451, 0.87451, 1)
+theme_override_colors/font_uneditable_color = Color(0.717647, 0.780392, 0.811765, 1)
 editable = false
 metadata/_edit_use_anchors_ = true
 
@@ -2477,7 +2463,7 @@ anchor_right = 0.485278
 anchor_bottom = 0.697211
 offset_right = 3.05176e-05
 focus_mode = 0
-theme_override_colors/font_uneditable_color = Color(0.87451, 0.87451, 0.87451, 1)
+theme_override_colors/font_uneditable_color = Color(0.717647, 0.780392, 0.811765, 1)
 editable = false
 metadata/_edit_use_anchors_ = true
 
@@ -2489,7 +2475,7 @@ anchor_top = 0.615957
 anchor_right = 0.865888
 anchor_bottom = 0.697211
 focus_mode = 0
-theme_override_colors/font_uneditable_color = Color(0.87451, 0.87451, 0.87451, 1)
+theme_override_colors/font_uneditable_color = Color(0.717647, 0.780392, 0.811765, 1)
 editable = false
 metadata/_edit_use_anchors_ = true
 
@@ -2503,7 +2489,7 @@ anchor_bottom = 0.843993
 offset_right = 3.05176e-05
 offset_bottom = -0.000213623
 focus_mode = 0
-theme_override_colors/font_uneditable_color = Color(0.87451, 0.87451, 0.87451, 1)
+theme_override_colors/font_uneditable_color = Color(0.717647, 0.780392, 0.811765, 1)
 editable = false
 metadata/_edit_use_anchors_ = true
 
@@ -2515,7 +2501,7 @@ anchor_top = 0.762739
 anchor_right = 0.865888
 anchor_bottom = 0.846613
 focus_mode = 0
-theme_override_colors/font_uneditable_color = Color(0.87451, 0.87451, 0.87451, 1)
+theme_override_colors/font_uneditable_color = Color(0.717647, 0.780392, 0.811765, 1)
 editable = false
 metadata/_edit_use_anchors_ = true
 
@@ -2528,7 +2514,7 @@ anchor_right = 0.487181
 anchor_bottom = 0.996015
 offset_right = 3.05176e-05
 focus_mode = 0
-theme_override_colors/font_uneditable_color = Color(0.87451, 0.87451, 0.87451, 1)
+theme_override_colors/font_uneditable_color = Color(0.717647, 0.780392, 0.811765, 1)
 editable = false
 metadata/_edit_use_anchors_ = true
 
@@ -2540,7 +2526,7 @@ anchor_top = 0.909519
 anchor_right = 0.865888
 anchor_bottom = 0.996015
 focus_mode = 0
-theme_override_colors/font_uneditable_color = Color(0.87451, 0.87451, 0.87451, 1)
+theme_override_colors/font_uneditable_color = Color(0.717647, 0.780392, 0.811765, 1)
 editable = false
 metadata/_edit_use_anchors_ = true
 
@@ -3423,6 +3409,7 @@ metadata/_edit_use_anchors_ = true
 
 [connection signal="tab_changed" from="Body/ModelPanel/Navbar" to="Body" method="_on_navbar_tab_changed"]
 [connection signal="pressed" from="Body/TabButtons/ToggleModelGridBtn" to="Body" method="_on_toggle_model_grid_btn_pressed"]
+[connection signal="toggled" from="Body/TabButtons/OverlayColorButton" to="Body" method="_on_overlay_color_toggled"]
 [connection signal="pressed" from="Body/TabButtons/ToggleNucleusGridBtn" to="Body" method="_on_toggle_nucleus_grid_btn_pressed"]
 [connection signal="pressed" from="Body/TabButtons/ToggleSunBtn" to="Body" method="_on_toggle_sun_btn_pressed"]
 [connection signal="pressed" from="Body/TabButtons/ToggleYBtn" to="Body" method="_on_toggle_y_btn_pressed"]

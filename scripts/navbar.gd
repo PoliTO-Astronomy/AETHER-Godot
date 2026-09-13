@@ -17,10 +17,29 @@ extends CanvasLayer
 const MIN_VP_SIDE := 256
 var alpha_check: CheckBox
 var overlay_check: CheckBox
+var image_check: CheckBox
+var direction_overlay: ScientificDirectionOverlay
+
+func _on_overlay_color_toggled(black: bool) -> void:
+	var ink := Color.BLACK if black else Color.WHITE
+	var overlays := $"/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer"
+	for node_name in ["Sprite2D", "DataControl", "LabelControl"]:
+		overlays.get_node(node_name).modulate = ink
+	$"/root/Hud/Viewport/NucleusPanelRect/NucleusDateLabel".modulate = ink
+	if direction_overlay != null:
+		direction_overlay.set_ink_color(ink)
+	$TabButtons/OverlayColorButton.text = "Overlays: Black" if black else "Overlays: White"
 
 ## Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	update_save_load_buttons()
+	direction_overlay = ScientificDirectionOverlay.new()
+	direction_overlay.name = "ScientificDirectionOverlay"
+	direction_overlay.position = Vector2.ZERO
+	direction_overlay.size = Vector2(230, 128)
+	direction_overlay.z_index = 4
+	direction_overlay.visible = false
+	aspect_ratio_container.add_child(direction_overlay)
 	aspect_ratio_container.resized.connect(_sync_center)
 	await get_tree().process_frame
 
@@ -48,6 +67,11 @@ func _ready() -> void:
 	# 👇 QUESTA È LA RIGA CHIAVE
 	file_explorer.get_vbox().add_child(alpha_check)
 	file_explorer.get_vbox().add_child(overlay_check)
+	image_check = CheckBox.new()
+	image_check.text = "Include visible CCD image"
+	image_check.button_pressed = true
+	file_explorer.get_vbox().add_child(image_check)
+	_set_image_export_options_visible(false)
 
 	if not file_explorer.file_selected.is_connected(_on_file_explorer_file_selected):
 		file_explorer.file_selected.connect(_on_file_explorer_file_selected)
@@ -193,10 +217,11 @@ func _on_save_btn_pressed() -> void:
 		return
 	file_explorer.file_mode = FileDialog.FILE_MODE_SAVE_FILE
 	file_explorer.filters = ["*.txt;Configuration File"]
+	_set_image_export_options_visible(false)
 	file_explorer.set_meta("is_screenshot", false)
 	file_explorer.set_meta("is_screenshot_mini", false)
+	SaveManager.prepare_file_dialog(file_explorer, "config.txt")
 	file_explorer.popup_centered()
-	file_explorer.current_file = "config"
 	
 	file_explorer.visible = true
 ## Opens the OS Native file explorer to load a configuration from a chosen file
@@ -209,8 +234,10 @@ func _on_load_btn_pressed() -> void:
 		return
 	file_explorer.file_mode = FileDialog.FILE_MODE_OPEN_FILE
 	file_explorer.filters = ["*.txt;Configuration File"]
+	_set_image_export_options_visible(false)
 	file_explorer.set_meta("is_screenshot", false)
 	file_explorer.set_meta("is_screenshot_mini", false)
+	SaveManager.prepare_file_dialog(file_explorer)
 	file_explorer.popup_centered()
 	
 	file_explorer.visible = true
@@ -233,27 +260,36 @@ func enable_btn(btn_name: String) -> void:
 func _on_screenshot_btn_pressed() -> void:
 	file_explorer.file_mode = FileDialog.FILE_MODE_SAVE_FILE
 	file_explorer.filters = ["*.png;Image File"]
+	_set_image_export_options_visible(true)
 	file_explorer.set_meta("is_screenshot", true)
 	file_explorer.set_meta("is_screenshot_mini", false)
+	SaveManager.prepare_file_dialog(file_explorer, "screenshot.png")
 	file_explorer.popup_centered()
-	file_explorer.current_file = "screenshot"
 	
 	file_explorer.visible = true
 
 func _on_save_nucleus_btn_pressed() -> void:
 	file_explorer.file_mode = FileDialog.FILE_MODE_SAVE_FILE
 	file_explorer.filters = ["*.png;Image File"]
+	_set_image_export_options_visible(false)
 	file_explorer.set_meta("is_screenshot_mini", true)
 	file_explorer.set_meta("is_screenshot", false)
+	SaveManager.prepare_file_dialog(file_explorer, "nucleus.png")
 	file_explorer.popup_centered()
-	file_explorer.current_file = "screenshot"
 	
 	file_explorer.visible = true
+
+
+func _set_image_export_options_visible(show_options: bool) -> void:
+	for option in [alpha_check, overlay_check, image_check]:
+		if option != null:
+			option.visible = show_options
 
 
 ## Called when a file, either through the save or load methods, is selected.
 ## Saves/Loads a configuration
 func _on_file_explorer_file_selected(path: String) -> void:
+	SaveManager.remember_file_directory(path)
 	if file_explorer.file_mode == FileDialog.FILE_MODE_SAVE_FILE:
 		#if file_explorer.get_meta("is_screenshot", false):
 		#	var want_alpha := alpha_check != null and alpha_check.button_pressed
@@ -265,7 +301,7 @@ func _on_file_explorer_file_selected(path: String) -> void:
 			var want_alpha := alpha_check != null and alpha_check.button_pressed
 			var want_overlay := overlay_check != null and overlay_check.button_pressed
 
-			var img := await screenshot_composited_with_overlays(rot_camera_viewport, want_alpha, want_overlay)
+			var img := await screenshot_composited_with_overlays(rot_camera_viewport, want_alpha, want_overlay, image_check.button_pressed)
 
 			img.resize(1200, 1200)
 			img.convert(Image.FORMAT_RGBA8)
@@ -506,6 +542,7 @@ func _on_toggle_transparency_toggled(toggled_on: bool) -> void:
 	$/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer/OverlayImg.visible = toggled_on
 	# check if overlay_img exists
 	sub_viewport_container.get_node("SubViewport").transparent_bg = toggled_on
+	sub_viewport_container.modulate.a = $SimTab/Control/TransparencySlider.value if toggled_on else 1.0
 
 func _on_toggle_nucleus_grid_btn_pressed() -> void:
 	get_tree().call_group("comet", "toggle_nucleus_grid")
@@ -543,21 +580,74 @@ func update_save_load_buttons() -> void:
 		disable_btn("SaveBtn")
 		disable_btn("LoadBtn")
 
-func screenshot_composited_with_overlays(vp: SubViewport, want_alpha: bool, include_nucleus_preview: bool) -> Image:
-	var base: Image = await screenshot_subviewport(vp, want_alpha)
+func screenshot_composited_with_overlays(vp: SubViewport, want_alpha: bool, include_nucleus_preview: bool, include_image: bool = true) -> Image:
+	var base: Image = await screenshot_subviewport(vp, true)
+	base.convert(Image.FORMAT_RGBA8)
+	_apply_image_opacity(base, sub_viewport_container.modulate.a)
 	var overlays: Image = await capture_overlays_with_alpha()
 
 	if overlays.get_width() != base.get_width() or overlays.get_height() != base.get_height():
 		overlays.resize(base.get_width(), base.get_height(), Image.INTERPOLATE_BILINEAR)
 
 	var out: Image = Image.create(base.get_width(), base.get_height(), false, Image.FORMAT_RGBA8)
-	out.blit_rect(base, Rect2i(0, 0, base.get_width(), base.get_height()), Vector2i.ZERO)
+	out.fill(Color.TRANSPARENT if want_alpha else Color.BLACK)
+	var image_control: TextureRect = $"/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer/OverlayImg"
+	if include_image and image_control.visible and image_control.texture != null:
+		var ccd := image_control.texture.get_image()
+		ccd.convert(Image.FORMAT_RGBA8)
+		var factor := minf(float(base.get_width()) / ccd.get_width(), float(base.get_height()) / ccd.get_height())
+		ccd.resize(maxi(1, roundi(ccd.get_width() * factor)), maxi(1, roundi(ccd.get_height() * factor)), Image.INTERPOLATE_BILINEAR)
+		_apply_image_opacity(ccd, image_control.modulate.a)
+		var offset := (base.get_size() - ccd.get_size()) / 2
+		out.blend_rect(ccd, Rect2i(Vector2i.ZERO, ccd.get_size()), offset)
+	out.blend_rect(base, Rect2i(Vector2i.ZERO, base.get_size()), Vector2i.ZERO)
 	out.blend_rect(overlays, Rect2i(0, 0, overlays.get_width(), overlays.get_height()), Vector2i.ZERO)
+	var direction_legend: Image = await capture_direction_overlay()
+	var direction_margin := maxi(12, roundi(out.get_width() * 0.025))
+	var direction_position := Vector2i(
+		out.get_width() - direction_legend.get_width() - direction_margin,
+		maxi(35, roundi(out.get_height() * 0.07))
+	)
+	out.blend_rect(
+		direction_legend,
+		Rect2i(Vector2i.ZERO, direction_legend.get_size()),
+		direction_position
+	)
 
 	if include_nucleus_preview:
 		await _draw_nucleus_preview_on_screenshot(out)
 
 	return out
+
+func capture_direction_overlay() -> Image:
+	var export_viewport := SubViewport.new()
+	export_viewport.name = "DirectionOverlayExportViewport"
+	export_viewport.size = Vector2i(250, 128)
+	export_viewport.transparent_bg = true
+	export_viewport.disable_3d = true
+	export_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+	add_child(export_viewport)
+
+	var export_overlay := ScientificDirectionOverlay.new()
+	export_overlay.position = Vector2.ZERO
+	export_overlay.size = Vector2(export_viewport.size)
+	export_overlay.set_ink_color(direction_overlay.ink_color)
+	export_viewport.add_child(export_overlay)
+
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	var image := export_viewport.get_texture().get_image()
+	export_viewport.queue_free()
+	return image
+
+func _apply_image_opacity(img: Image, opacity: float) -> void:
+	if is_equal_approx(opacity, 1.0):
+		return
+	for y in range(img.get_height()):
+		for x in range(img.get_width()):
+			var pixel := img.get_pixel(x, y)
+			pixel.a *= opacity
+			img.set_pixel(x, y, pixel)
 
 
 func capture_overlays_with_alpha() -> Image:
