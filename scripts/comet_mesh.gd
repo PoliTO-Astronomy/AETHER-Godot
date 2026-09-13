@@ -183,6 +183,13 @@ func simulation_setup() -> void:
 	Util.jet_rate = jet_rate
 	get_tree().call_group("disable", "disable_btn", "LoadBtn")
 
+	# A stopped simulation may leave emitter state calculated with the previous
+	# nucleus size. Always rebuild the radius-dependent values before either a
+	# progressive or an instant run.
+	for emitter: Emitter in get_tree().get_nodes_in_group("emitter"):
+		emitter.update_position(mesh.radius)
+		emitter.update_acceleration()
+
 	Util.equatorial_rotation = quaternion
 	look_at(Util.sun_direction_vector, Vector3.UP)
 	rotate(transform.basis.y, deg_to_rad(-90))
