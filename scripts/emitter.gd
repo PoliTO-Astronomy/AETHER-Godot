@@ -225,15 +225,17 @@ func instant_simulation(_n_steps: int, _angle_per_step: float, jpl_import: Dicti
 		# just "i" would've worked just fine but it wasn't logically correct
 		var ith_transform := _accelerate_particle2(_n_steps - i, _normal)
 		particle_transforms.append(ith_transform)
-		# The central trajectory counts as one of the particles emitted per step.
-		_append_data_to_mm_buffer(mm_buffer, ith_transform, color)
+		# Without diffusion all particles follow the nominal trajectory. With
+		# diffusion the nominal trajectory is only used as the cloud centre and
+		# every visible particle is displaced, avoiding a sharp central curve.
 		if diffusion <= 0:
+			_append_data_to_mm_buffer(mm_buffer, ith_transform, color)
 			for _particle_index in range(1, density):
 				_append_data_to_mm_buffer(mm_buffer, ith_transform, color)
 
 	print("buffer_size: %d" % mm_buffer.size())
 	# numerical integration to reconstruct diffusion particles
-	if density > 1 and diffusion > 0:
+	if density > 0 and diffusion > 0:
 		@warning_ignore("integer_division")
 		var SUBSTEPS: int = clamp(_n_steps / 10, 10, 25)
 		for idx in range(particle_transforms.size()):
@@ -292,12 +294,12 @@ func _accelerate_particle2(time_alive2: int, _normal_dir: Vector3) -> Transform3
 	return final_global_transform
 	
 func _generate_diffusion_particles2(travelled_space: float, particle_origin: Vector3) -> Array[Transform3D]:
-	if density <= 1:
+	if density <= 0:
 		return []
 	var diffusion_particles: Array[Transform3D] = []
 	var pc_radius := travelled_space * (diffusion / 100) * randf() # pointcloud radius based on total space travelled by the particle and diffusion factor
 	# print("Radius:%f" % pc_radius)
-	for i in range(density - 1):
+	for i in range(density):
 		# generating a random position around the particle
 		var new_pos := Util.generate_gaussian_vector(0, 1, pc_radius)
 		diffusion_particles.append(Transform3D(Basis(), particle_origin + new_pos))
@@ -381,16 +383,16 @@ func _accelerate_particle(i: int) -> void:
 	mm_emitter.multimesh.set_instance_transform(i, instance_local_transform)
 ## TODO: refactor so that there's only one function that accelerates the particle
 
-## Generate the remaining particles of an emission group around its central particle.
+## Displace every visible particle of an emission group around its nominal trajectory.
 ## It doesn't update multimesh.visible_instance_count!
 func _generate_diffusion_particles(i: int) -> void:
-	if density <= 1:
+	if density <= 0:
 		return # no diffusion particles to generate
 	var center_particle := mm_emitter.multimesh.get_instance_transform(i)
 	var center_particle_color := mm_emitter.multimesh.get_instance_color(i)
 	var pc_radius := total_space[i] * (diffusion / 100) * randf() # pointcloud radius based on total space travelled by the particle and diffusion factor
 	# TODO: maybe use compute shader to generate the particles around the center particle
-	for j in range(1, density):
+	for j in range(density):
 		# generating a random position around the particle
 		var new_pos := Util.generate_gaussian_vector(0, 1, pc_radius)
 		mm_emitter.multimesh.set_instance_transform(i + j, Transform3D(Basis(), center_particle.origin + new_pos))

@@ -14,6 +14,12 @@ func _ready() -> void:
 		printerr("Scroll container or content node not correctly assigned")
 		return
 	get_node("../JetPanel").resized.connect(_update_scroll_container_height)
+	visibility_changed.connect(_on_visibility_changed)
+	_update_scroll_container_height()
+
+func _on_visibility_changed() -> void:
+	if is_visible_in_tree():
+		_update_scroll_container_height()
 	
 ## Update the scroll container height based on how many children (JetEntry) it has
 func _update_scroll_container_height() -> void:
@@ -21,6 +27,8 @@ func _update_scroll_container_height() -> void:
 	#in case node is freed
 	if not is_instance_valid(scroll_container) or not is_instance_valid(content_node):
 		return
+	# An empty body must not reserve space, including while Model is hidden at startup.
+	scroll_container.visible = content_node.get_child_count() > 0
 	var total_content_node_height := content_node.get_combined_minimum_size().y
 	var panel: Control = get_node("../JetPanel")
 	var bottom := panel.get_global_rect().end.y - 12.0
@@ -29,7 +37,8 @@ func _update_scroll_container_height() -> void:
 	var new_height: float = min(total_content_node_height, min(max_height, max(40.0, available)))
 	if scroll_container.custom_minimum_size.y != new_height:
 		scroll_container.custom_minimum_size.y = new_height
-		size.y = get_combined_minimum_size().y
+	size.y = get_combined_minimum_size().y
+	queue_sort()
 	
 
 ## Called by Navbar._on_file_explorer_file_selected().

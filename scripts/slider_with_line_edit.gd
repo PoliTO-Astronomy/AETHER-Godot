@@ -35,6 +35,8 @@ func _ready() -> void:
 	if resize_type == "alpha_p" or resize_type == "delta_p":
 		slider.drag_ended.connect(_on_slider_drag_ended)
 	$Label.text = label
+	if Engine.is_editor_hint():
+		return
 	if resize_type:
 		# print("[Slider w LineEdit] update_" + resize_type + "(" + str(starting_value) + ")")
 		if resize_type == "alpha_p" or resize_type == "delta_p":
