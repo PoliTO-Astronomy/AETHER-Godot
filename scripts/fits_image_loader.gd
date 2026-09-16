@@ -159,7 +159,7 @@ static func _decode_image_hdu(file: FileAccess, header: Dictionary, data_offset:
 		pixels[target_index + 3] = 255
 
 	var image := Image.create_from_data(width, height, false, Image.FORMAT_RGBA8, pixels)
-	return {
+	var result := {
 		"ok": true,
 		"image": image,
 		"width": width,
@@ -168,6 +168,113 @@ static func _decode_image_hdu(file: FileAccess, header: Dictionary, data_offset:
 		"display_min": display_min,
 		"display_max": display_max,
 	}
+	result.merge(_extract_pixel_scale_arcsec(header))
+	return result
+
+static func _extract_pixel_scale_arcsec(header: Dictionary) -> Dictionary:
+	# These commonly used keywords already express angular size per pixel in arcseconds.
+	for keyword in ["PIXSCALE", "SECPIX", "CCDSCALE"]:
+		var direct_value := _positive_header_number(header, keyword)
+		if direct_value > 0.0:
+			return _pixel_scale_result(direct_value, direct_value, keyword)
+
+	for keyword_pair in [["PIXSCAL1", "PIXSCAL2"], ["SECPIX1", "SECPIX2"]]:
+		var paired_values: Array[float] = []
+		for keyword in keyword_pair:
+			var paired_value := _positive_header_number(header, keyword)
+			if paired_value > 0.0:
+				paired_values.append(paired_value)
+		if not paired_values.is_empty():
+			return _pixel_scale_from_values(paired_values, "%s/%s" % [keyword_pair[0], keyword_pair[1]])
+
+	# A CD matrix stores the celestial transformation in angular units per pixel.
+	var cd_keys := ["CD1_1", "CD1_2", "CD2_1", "CD2_2"]
+	var has_cd_matrix := false
+	for keyword in cd_keys:
+		if header.has(keyword):
+			has_cd_matrix = true
+			break
+	if has_cd_matrix:
+		var unit_1 := _angular_unit_to_arcsec(str(header.get("CUNIT1", "deg")))
+		var unit_2 := _angular_unit_to_arcsec(str(header.get("CUNIT2", "deg")))
+		if unit_1 > 0.0 and unit_2 > 0.0:
+			var cd11 := _header_number(header, "CD1_1") * unit_1
+			var cd12 := _header_number(header, "CD1_2") * unit_1
+			var cd21 := _header_number(header, "CD2_1") * unit_2
+			var cd22 := _header_number(header, "CD2_2") * unit_2
+			var scale_x := sqrt(cd11 * cd11 + cd21 * cd21)
+			var scale_y := sqrt(cd12 * cd12 + cd22 * cd22)
+			var cd_result := _pixel_scale_result(scale_x, scale_y, "CD matrix")
+			if not cd_result.is_empty():
+				return cd_result
+
+	# CDELT is the standard WCS increment. CUNIT defaults to degrees in celestial WCS.
+	var cdelt_values: Array[float] = []
+	for axis in [1, 2]:
+		var keyword := "CDELT%d" % axis
+		if not header.has(keyword):
+			continue
+		var unit_factor := _angular_unit_to_arcsec(str(header.get("CUNIT%d" % axis, "deg")))
+		var value := absf(_header_number(header, keyword)) * unit_factor
+		if is_finite(value) and value > 0.0:
+			cdelt_values.append(value)
+	if not cdelt_values.is_empty():
+		return _pixel_scale_from_values(cdelt_values, "CDELT")
+
+	# Some acquisition systems provide physical pixel size (micrometres) and focal length (mm).
+	var focal_length_mm := _positive_header_number(header, "FOCALLEN")
+	if focal_length_mm > 0.0:
+		var physical_values: Array[float] = []
+		for keyword in ["XPIXSZ", "YPIXSZ"]:
+			var pixel_size_um := _positive_header_number(header, keyword)
+			if pixel_size_um > 0.0:
+				physical_values.append(206.264806 * pixel_size_um / focal_length_mm)
+		if not physical_values.is_empty():
+			return _pixel_scale_from_values(physical_values, "pixel size/focal length")
+
+	return {}
+
+static func _pixel_scale_from_values(values: Array[float], source: String) -> Dictionary:
+	if values.size() == 1:
+		return _pixel_scale_result(values[0], values[0], source)
+	return _pixel_scale_result(values[0], values[1], source)
+
+static func _pixel_scale_result(scale_x: float, scale_y: float, source: String) -> Dictionary:
+	if not is_finite(scale_x) or not is_finite(scale_y) or scale_x <= 0.0 or scale_y <= 0.0:
+		return {}
+	# AETHER currently accepts one scale value, so use the area-preserving mean for non-square pixels.
+	return {
+		"pixel_scale_arcsec": sqrt(scale_x * scale_y),
+		"pixel_scale_x_arcsec": scale_x,
+		"pixel_scale_y_arcsec": scale_y,
+		"pixel_scale_source": source,
+	}
+
+static func _positive_header_number(header: Dictionary, keyword: String) -> float:
+	var value := absf(_header_number(header, keyword))
+	return value if is_finite(value) and value > 0.0 else 0.0
+
+static func _header_number(header: Dictionary, keyword: String) -> float:
+	if not header.has(keyword):
+		return 0.0
+	var value: Variant = header[keyword]
+	if value is int or value is float:
+		return float(value)
+	var text := str(value).strip_edges().replace("D", "E").replace("d", "e")
+	return float(text) if text.is_valid_float() else 0.0
+
+static func _angular_unit_to_arcsec(unit: String) -> float:
+	var normalized := unit.strip_edges().to_lower().replace(" ", "")
+	match normalized:
+		"", "deg", "degree", "degrees":
+			return 3600.0
+		"arcsec", "arcsecond", "arcseconds", "asec":
+			return 1.0
+		"arcmin", "arcminute", "arcminutes", "amin":
+			return 60.0
+		"rad", "radian", "radians":
+			return 206264.80624709636
+	return 0.0
 
 static func _read_value(file: FileAccess, bitpix: int) -> Variant:
 	match bitpix:

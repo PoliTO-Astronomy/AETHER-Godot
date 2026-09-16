@@ -15,21 +15,16 @@ func _ready() -> void:
 	# $Control/FrequencyEdit.set_value(1)
 	# $Control/NumRotationEdit.set_value(1)
 	# $Control/JetRateEdit.set_value(5)
-	image_opacity_slider = HSlider.new()
-	image_opacity_slider.name = "ImageOpacitySlider"
-	image_opacity_slider.max_value = 1.0
-	image_opacity_slider.step = 0.01
-	image_opacity_slider.value = 1.0
-	image_opacity_slider.tooltip_text = "CCD image opacity: 0% hidden, 100% opaque"
+	image_opacity_slider = $Control/ImageOpacitySlider
+	image_opacity_label = $Control/ImageOpacityLabel
 	image_opacity_slider.value_changed.connect(_on_image_opacity_changed)
-	$Control.add_child(image_opacity_slider)
-	image_opacity_label = Label.new()
-	image_opacity_label.name = "ImageOpacityLabel"
-	$Control.add_child(image_opacity_label)
+	_update_opacity_labels()
 	$Control/CCDImagePanel.resized.connect(_layout_opacity_controls)
 	call_deferred("_layout_opacity_controls")
 
 func _layout_opacity_controls() -> void:
+	if not Hud.automatic_layout:
+		return
 	var panel: Control = $Control/CCDImagePanel
 	var width := (panel.size.x - 44.0) / 2.0
 	var origin := panel.position + Vector2(16, 32)
@@ -143,6 +138,19 @@ func load_texture(path: String) -> bool:
 			float(fits_metadata["display_min"]),
 			float(fits_metadata["display_max"]),
 		]
+		var resolution_edit: SanitizedEdit = $"../ScaleTab/Control/TelResolutionEdit"
+		var pixel_scale := float(fits_metadata.get("pixel_scale_arcsec", 0.0))
+		if pixel_scale > 0.0:
+			resolution_edit.set_value(pixel_scale)
+			var scale_source := str(fits_metadata.get("pixel_scale_source", "FITS header"))
+			var scale_x := float(fits_metadata.get("pixel_scale_x_arcsec", pixel_scale))
+			var scale_y := float(fits_metadata.get("pixel_scale_y_arcsec", pixel_scale))
+			image_details += "\nResolution %.7g arcsec/pixel read from %s" % [pixel_scale, scale_source]
+			if not is_equal_approx(scale_x, scale_y):
+				image_details += " (X %.7g; Y %.7g; area-preserving mean)" % [scale_x, scale_y]
+			resolution_edit.tooltip_text = "Automatically read from the FITS header (%s). You can replace it manually." % scale_source
+		else:
+			resolution_edit.tooltip_text = "No angular resolution was found in the FITS header. Enter arcsec/pixel manually."
 	$"../ScaleTab/Control/TelImageSizeEdit".tooltip_text = image_details
 	return true
 

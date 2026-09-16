@@ -102,10 +102,10 @@ Il modello viene aggiornato automaticamente e la data selezionata compare nell'a
 
 [b]Load CCD Image[/b] carica l'immagine telescopica usata come riferimento. AETHER rileva automaticamente la dimensione in pixel e adatta l'immagine alla finestra principale. Per una visualizzazione ottimale è consigliata un'immagine quadrata con la cometa al centro.
 
-[b]Formati disponibili nella versione corrente:[/b] FITS, FIT, FTS, PNG, JPG, JPEG e WebP. Per le immagini FITS bidimensionali non compresse, AETHER legge dati interi o floating point, applica BSCALE/BZERO e genera automaticamente una visualizzazione in scala di grigi con contrasto astronomico. I cubi FITS vengono visualizzati usando il primo piano.
+[b]Formati disponibili nella versione corrente:[/b] FITS, FIT, FTS, PNG, JPG, JPEG e WebP. Per le immagini FITS bidimensionali non compresse, AETHER legge dati interi o floating point, applica BSCALE/BZERO e genera automaticamente una visualizzazione in scala di grigi con contrasto astronomico. I cubi FITS vengono visualizzati usando il primo piano. Se l’header contiene una scala angolare riconoscibile, la risoluzione in arcsec/pixel viene compilata automaticamente e può comunque essere modificata manualmente.
 [color=#E7B64A][b]FORMATO PREVISTO DAL MANUALE[/b][/color] TIF sarà aggiunto alla procedura di caricamento.
 
-Inserisci la risoluzione angolare in arcsec/pixel in base al sistema ottico. Usando la distanza dalla Terra [b]Delta[/b], importata da JPL Horizons, AETHER calcola la risoluzione in km/pixel e il FOV in chilometri e arcosecondi.
+Se la risoluzione non viene rilevata dall’header FITS, inseriscila manualmente in arcsec/pixel in base al sistema ottico. Usando la distanza dalla Terra [b]Delta[/b], importata da JPL Horizons, AETHER calcola la risoluzione in km/pixel e il FOV in chilometri e arcosecondi.
 
 Lo switch CCD mostra o nasconde l'immagine, sostituendola con il fondo nero senza eliminarla.
 
@@ -264,10 +264,10 @@ The model updates automatically, and the selected date is displayed in both the 
 
 [b]Load CCD Image[/b] loads the telescopic reference image. AETHER automatically detects its pixel dimensions and adapts it to the main viewport. A square image with the comet centred is recommended.
 
-[b]Formats available in the current build:[/b] FITS, FIT, FTS, PNG, JPG, JPEG and WebP. For uncompressed two-dimensional FITS images, AETHER reads integer or floating-point data, applies BSCALE/BZERO and automatically creates an astronomical-contrast grayscale view. FITS cubes are displayed using their first plane.
+[b]Formats available in the current build:[/b] FITS, FIT, FTS, PNG, JPG, JPEG and WebP. For uncompressed two-dimensional FITS images, AETHER reads integer or floating-point data, applies BSCALE/BZERO and automatically creates an astronomical-contrast grayscale view. FITS cubes are displayed using their first plane. If the header contains a recognised angular scale, the arcsec/pixel resolution is filled automatically and can still be edited manually.
 [color=#E7B64A][b]FORMAT PLANNED BY THE MANUAL[/b][/color] TIF will be added to the loading workflow.
 
-Enter the angular resolution in arcsec/pixel for the optical system. Using the Earth range [b]Delta[/b] imported from JPL Horizons, AETHER calculates the resolution in km/pixel and the FOV in kilometres and arcseconds.
+If the resolution is not detected in the FITS header, enter it manually in arcsec/pixel for the optical system. Using the Earth range [b]Delta[/b] imported from JPL Horizons, AETHER calculates the resolution in km/pixel and the FOV in kilometres and arcseconds.
 
 The CCD switch shows or hides the image, replacing it with a black background without removing it.
 

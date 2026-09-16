@@ -129,6 +129,10 @@ func update_scale_factor() -> void:
 
 
 func update_ruler() -> void:
+	# Scene-authored layouts can resize before the Util autoload has finished ready.
+	if not is_instance_valid(Util.current_fov_label):
+		call_deferred("update_ruler")
+		return
 	get_tree().call_group("comet", "update_coordinate_grid_labels")
 	# var fov_full_zoom: float = Util.visible_area / 1000 * (Util.tel_image_size / Util.window_size)
 	# var pixel_resolution_full_zoom: float = fov_full_zoom / Util.window_size

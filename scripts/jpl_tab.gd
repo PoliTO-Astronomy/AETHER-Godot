@@ -62,24 +62,8 @@ func _setup_date_inputs() -> void:
 		edit.tooltip_text = "Enter day/month/year, for example 29/02/2028, or use the calendar."
 		edit.text_submitted.connect(func(_text: String): _commit_date_input(index))
 		edit.focus_exited.connect(_commit_date_input.bind(index))
-		var hint := Label.new()
-		hint.add_theme_font_size_override("font_size", 11)
-		hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		$Control.add_child(hint)
+		var hint: Label = $Control.get_node(prefix + "DateHint")
 		date_hints.append(hint)
-		var origin := edit.position - Vector2(20, 0)
-		Hud._place_control(edit, Rect2(origin, Vector2(150, 32)))
-		var clear: Button = $Control.get_node("Clear" + prefix + "DateBtn")
-		clear.focus_mode = Control.FOCUS_ALL
-		clear.tooltip_text = "Clear date"
-		Hud._place_control(clear, Rect2(origin + Vector2(158, 0), Vector2(28, 32)))
-		var picker: TextureButton = $Control.get_node(prefix + "CalendarBtn")
-		picker.focus_mode = Control.FOCUS_ALL
-		picker.tooltip_text = "Choose date"
-		Hud._place_control(picker, Rect2(origin + Vector2(194, 0), Vector2(32, 32)))
-		Hud._place_control(hint, Rect2(origin + Vector2(0, 33), Vector2(230, 17)))
-	Hud._place_control($Control/TimespanInfoBtn,
-		Rect2($Control/StartDateLabel.position + Vector2(110, 0), Vector2(22, 22)))
 	_validate_dates(false)
 	_setup_settings_titles()
 	_layout_settings_screen()
@@ -88,28 +72,10 @@ func _setup_settings_titles() -> void:
 	_setup_psamv_option()
 	if observation_title != null:
 		return
-	observation_title = Label.new()
-	observation_title.text = "Observation setup"
-	results_title = Label.new()
-	results_title.text = "Ephemeris results"
-	empty_results_label = Label.new()
-	empty_results_label.text = "Ephemeris data will appear here after a successful search."
-	empty_results_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	empty_results_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	empty_results_label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	empty_results_label.custom_minimum_size = Vector2(520, 48)
-	empty_results_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	empty_results_label.modulate = Color(AETHER_THEME.TEXT_SECONDARY, 0.8)
-	empty_results_overlay = CenterContainer.new()
-	empty_results_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	empty_results_overlay.z_index = 10
-	empty_results_overlay.add_child(empty_results_label)
-	for title in [observation_title, results_title]:
-		title.add_theme_font_size_override("font_size", 18)
-		title.add_theme_color_override("font_color", AETHER_THEME.ACCENT_BRIGHT)
-	$Control.add_child(observation_title)
-	$Control.add_child(results_title)
-	$Control.add_child(empty_results_overlay)
+	observation_title = $Control/ObservationTitle
+	results_title = $Control/ResultsTitle
+	empty_results_overlay = $Control/EmptyResultsOverlay
+	empty_results_label = $Control/EmptyResultsOverlay/EmptyResultsLabel
 
 func _setup_psamv_option() -> void:
 	if $Control/TableSettings.has_node("cbPsAMV"):
@@ -129,6 +95,8 @@ func _setup_psamv_option() -> void:
 	$Control/TableSettings.add_child(label)
 
 func _layout_settings_screen() -> void:
+	if not Hud.automatic_layout:
+		return
 	if observation_title == null:
 		return
 	var viewport_size := get_viewport().get_visible_rect().size

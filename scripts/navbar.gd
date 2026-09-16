@@ -25,7 +25,6 @@ func _on_overlay_color_toggled(black: bool) -> void:
 	var overlays := $"/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer"
 	for node_name in ["Sprite2D", "DataControl", "LabelControl"]:
 		overlays.get_node(node_name).modulate = ink
-	$"/root/Hud/Viewport/NucleusPanelRect/NucleusDateLabel".modulate = ink
 	if direction_overlay != null:
 		direction_overlay.set_ink_color(ink)
 	$TabButtons/OverlayColorButton.text = "Overlays: Black" if black else "Overlays: White"
@@ -504,32 +503,10 @@ func _on_help_node_btn_pressed() -> void:
 		node.visible = true
 
 func _on_navbar_tab_changed(tab: int) -> void:
-	var model_tab_nodes := get_tree().get_nodes_in_group("model_tab")
-	var settings_tab_nodes := get_tree().get_nodes_in_group("settings_tab")
-	var help_tab_nodes := get_tree().get_nodes_in_group("help_tab")
-	print(tab)
-	match tab:
-		0:
-			for node in model_tab_nodes:
-				node.visible = false
-			for node in settings_tab_nodes:
-				node.visible = true
-			for node in help_tab_nodes:
-				node.visible = false
-		1:
-			for node in model_tab_nodes:
-				node.visible = true
-			for node in settings_tab_nodes:
-				node.visible = false
-			for node in help_tab_nodes:
-				node.visible = false
-		2:
-			for node in model_tab_nodes:
-				node.visible = false
-			for node in settings_tab_nodes:
-				node.visible = false
-			for node in help_tab_nodes:
-				node.visible = true
+	var groups := ["settings_tab", "model_tab", "help_tab", "credits_tab"]
+	for index in range(groups.size()):
+		for node in get_tree().get_nodes_in_group(groups[index]):
+			node.visible = index == tab
 
 
 func _on_toggle_date_btn_pressed() -> void:

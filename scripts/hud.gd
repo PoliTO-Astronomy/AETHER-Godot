@@ -3,17 +3,24 @@ class_name HUD
 
 const AETHER_THEME = preload("res://scripts/aether_theme.gd")
 const HELP_CONTENT = preload("res://scripts/help_content.gd")
+const CREDITS_PAGE = preload("res://scripts/credits_page.gd")
 
 @onready var help_ita = $Body/HelpPanel/HelpContentPanel/CometPanel/HelpIta
 @onready var help_eng = $Body/HelpPanel/HelpContentPanel/CometPanel/HelpEng
 @onready var button_ita = $Body/HelpPanel/HelpContentPanel/CometPanel/ButtonIta
 @onready var button_eng = $Body/HelpPanel/HelpContentPanel/CometPanel/ButtonEng
 
+@export var automatic_layout := false
+
+var authored_model_anchors: Dictionary = {}
+var authored_sidebar_right := 0.310417
 var section_controls_layer: CanvasLayer
 var top_navigation_layer: CanvasLayer
 var top_save_button: Button
 var top_load_button: Button
 var help_title: Label
+var credits_panel: Panel
+var credits_background: Panel
 var help_subtitle: Label
 var help_navigation: VBoxContainer
 var help_section_buttons: Array[Button] = []
@@ -32,7 +39,13 @@ var saved_main_view_layout: Dictionary = {}
 var fullscreen_hidden_visibility: Dictionary = {}
 
 func _ready() -> void:
+	if Engine.is_editor_hint():
+		return
+	# Editor previews do not change the application's initial page.
+	$Body/ModelPanel/Navbar.current_tab = 0
+	$Body._on_navbar_tab_changed(0)
 	_apply_application_theme()
+	_setup_credits_page()
 	_setup_top_navigation_layer()
 	_setup_fullscreen_viewer()
 	call_deferred("_layout_top_navigation")
@@ -49,23 +62,32 @@ func _ready() -> void:
 		call_deferred("_layout_fullscreen_button")
 		call_deferred("_layout_help_page"))
 
+func _setup_credits_page() -> void:
+	credits_background = $CreditsPageLayer/Background
+	credits_panel = $CreditsPageLayer/Background/CreditsPanel
+	get_viewport().size_changed.connect(_layout_credits_page)
+	call_deferred("_layout_credits_page")
+
+func _layout_credits_page() -> void:
+	if not automatic_layout:
+		return
+	var help_outer: Control = $Body/HelpPanel/HelpContentPanel
+	var help_inner: Control = help_outer.get_node("CometPanel")
+	_place_control(credits_background, help_outer.get_global_rect())
+	_place_control(credits_panel, Rect2(help_inner.global_position - credits_background.global_position, help_inner.size))
+
 func _apply_application_theme() -> void:
-	var application_theme: Theme = AETHER_THEME.create()
-	for node in find_children("*", "", true, false):
-		if node is Control or node is Window:
-			node.theme = application_theme
+	# The shared Theme is assigned in the scene and editable in the Inspector.
+	pass
 
 func _setup_top_navigation_layer() -> void:
-	top_save_button = $Body/TabButtons/SaveBtn
-	top_load_button = $Body/TabButtons/LoadBtn
-	top_navigation_layer = CanvasLayer.new()
-	top_navigation_layer.name = "TopNavigationControls"
-	top_navigation_layer.layer = 30
-	add_child(top_navigation_layer)
-	top_save_button.reparent(top_navigation_layer, true)
-	top_load_button.reparent(top_navigation_layer, true)
+	top_navigation_layer = $TopNavigationControls
+	top_save_button = $TopNavigationControls/SaveBtn
+	top_load_button = $TopNavigationControls/LoadBtn
 
 func _layout_top_navigation() -> void:
+	if not automatic_layout:
+		return
 	var tabs: TabContainer = $Body/ModelPanel/Navbar
 	var tab_bar: TabBar = tabs.get_tab_bar()
 	var tab_rect := tab_bar.get_global_rect()
@@ -83,21 +105,10 @@ func _layout_top_navigation() -> void:
 		button.size = button_size
 
 func _setup_fullscreen_viewer() -> void:
-	fullscreen_controls_layer = CanvasLayer.new()
-	fullscreen_controls_layer.name = "FullscreenViewerControls"
-	fullscreen_controls_layer.layer = 40
-	add_child(fullscreen_controls_layer)
-
-	fullscreen_button = Button.new()
-	fullscreen_button.name = "FullscreenViewportButton"
-	fullscreen_button.text = "⛶"
-	fullscreen_button.tooltip_text = "Expand main viewport (F11)"
-	fullscreen_button.theme = $Viewport/Panel.theme
-	fullscreen_button.focus_mode = Control.FOCUS_NONE
-	fullscreen_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	fullscreen_button.add_theme_font_size_override("font_size", 22)
+	fullscreen_controls_layer = $FullscreenViewerControls
+	fullscreen_controls_layer.show()
+	fullscreen_button = $FullscreenViewerControls/FullscreenViewportButton
 	fullscreen_button.pressed.connect(_toggle_fullscreen_viewer)
-	fullscreen_controls_layer.add_child(fullscreen_button)
 
 	var tabs: TabContainer = $Body/ModelPanel/Navbar
 	tabs.tab_changed.connect(func(tab: int):
@@ -185,6 +196,8 @@ func _restore_main_view_layout(main_view: Panel) -> void:
 	main_view.offset_bottom = saved_main_view_layout["offset_bottom"]
 
 func _layout_fullscreen_button() -> void:
+	if not automatic_layout:
+		return
 	if fullscreen_button == null or not fullscreen_button.visible:
 		return
 	var main_rect: Rect2 = $Viewport/Panel.get_global_rect()
@@ -193,10 +206,11 @@ func _layout_fullscreen_button() -> void:
 
 func _setup_collapsible_sections() -> void:
 	await get_tree().process_frame
-	section_controls_layer = CanvasLayer.new()
-	section_controls_layer.name = "SectionCollapseControls"
-	section_controls_layer.layer = 20
-	add_child(section_controls_layer)
+	authored_sidebar_right = $Body/ModelPanel.anchor_right
+	for property in ["anchor_left", "anchor_right", "anchor_top", "anchor_bottom"]:
+		authored_model_anchors[property] = $Viewport/Panel.get(property)
+	section_controls_layer = $SectionCollapseControls
+	section_controls_layer.show()
 	section_definitions = {
 		"sun": _section($Body/CometTab/Control/SunPanelLabel, _sun_section_body(), _sun_section_layout()),
 		"nucleus": _section($Body/CometTab/Control/CometPanelLabel, _nucleus_section_body(), _nucleus_section_layout()),
@@ -210,8 +224,6 @@ func _setup_collapsible_sections() -> void:
 	for section_id in section_definitions:
 		section_collapsed[section_id] = false
 		var header: Label = section_definitions[section_id]["header"]
-		header.add_theme_font_size_override("font_size", 17)
-		header.add_theme_color_override("font_color", AETHER_THEME.ACCENT_BRIGHT)
 		var button := _make_section_button(section_id)
 		section_buttons[section_id] = button
 		for node: Control in section_definitions[section_id]["layout"]:
@@ -227,26 +239,8 @@ func _with_header(header: Control, body: Array[Control]) -> Array[Control]:
 	return nodes
 
 func _make_section_button(section_id: String) -> Button:
-	var button := Button.new()
-	button.name = section_id.to_pascal_case() + "CollapseButton"
-	button.text = "−"
-	button.tooltip_text = "Minimize %s section" % section_id.replace("_", " ")
-	button.focus_mode = Control.FOCUS_NONE
-	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	button.add_theme_color_override("font_color", AETHER_THEME.TEXT_SECONDARY)
-	button.add_theme_color_override("font_hover_color", AETHER_THEME.ACCENT_BRIGHT)
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = Color(AETHER_THEME.INPUT, 0.72)
-	normal.set_corner_radius_all(4)
-	var hover := normal.duplicate()
-	hover.bg_color = AETHER_THEME.SECTION
-	hover.border_color = AETHER_THEME.BORDER
-	hover.set_border_width_all(1)
-	button.add_theme_stylebox_override("normal", normal)
-	button.add_theme_stylebox_override("hover", hover)
-	button.add_theme_stylebox_override("pressed", hover)
-	button.pressed.connect(func(): _toggle_section(section_id))
-	section_controls_layer.add_child(button)
+	var button: Button = section_controls_layer.get_node(section_id.to_pascal_case() + "CollapseButton")
+	button.pressed.connect(_toggle_section.bind(section_id))
 	return button
 
 func _toggle_section(section_id: String) -> void:
@@ -284,12 +278,12 @@ func _update_compact_model_layout(is_model: bool) -> void:
 	var compact_left := is_model and _all_sections_collapsed(left_section_order)
 	var compact_right := is_model and _all_sections_collapsed(right_section_order)
 	var fully_compact := compact_left and compact_right
-	$Body/ModelPanel.anchor_right = 0.17 if compact_left else 0.310417
+	$Body/ModelPanel.anchor_right = 0.17 if compact_left else authored_sidebar_right
 	var main_view: Panel = $Viewport/Panel
-	main_view.anchor_left = 0.18 if compact_left else 0.325
-	main_view.anchor_right = 0.85 if compact_right else 0.79375
-	main_view.anchor_top = 0.025 if fully_compact else 0.0417476
-	main_view.anchor_bottom = 0.93 if fully_compact else 0.915534
+	main_view.anchor_left = 0.18 if compact_left else authored_model_anchors["anchor_left"]
+	main_view.anchor_right = 0.85 if compact_right else authored_model_anchors["anchor_right"]
+	main_view.anchor_top = 0.025 if fully_compact else authored_model_anchors["anchor_top"]
+	main_view.anchor_bottom = 0.93 if fully_compact else authored_model_anchors["anchor_bottom"]
 
 func _layout_collapsible_sections() -> void:
 	if section_controls_layer == null or $Body/ModelPanel/Navbar.current_tab != 1:
@@ -356,6 +350,8 @@ func _place_control(control: Control, rect: Rect2) -> void:
 	control.size = rect.size
 
 func _layout_nucleus_parameters() -> void:
+	if not automatic_layout:
+		return
 	# Keep the three rotation inputs in separate columns, above the RA/Dec rows.
 	var panel: Control = $Body/CometTab/Control/CometPanel
 	var origin := panel.position + Vector2(12, 4)
@@ -422,6 +418,8 @@ func _layout_nucleus_parameters() -> void:
 				Rect2(panel.position + Vector2(x + 40, y), Vector2(76, 31)))
 	
 func _input(event: InputEvent) -> void:
+	if Engine.is_editor_hint():
+		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_F11 and ($Body/ModelPanel/Navbar.current_tab == 1 or viewport_fullscreen):
 			_toggle_fullscreen_viewer()
@@ -484,23 +482,13 @@ func _collect_focusable(node: Node, arr: Array) -> void:
 func _setup_help_page() -> void:
 	if help_navigation != null:
 		return
-	help_title = Label.new()
-	help_title.add_theme_font_size_override("font_size", 24)
-	help_title.add_theme_color_override("font_color", AETHER_THEME.ACCENT_BRIGHT)
-	help_subtitle = Label.new()
-	help_subtitle.add_theme_color_override("font_color", AETHER_THEME.TEXT_SECONDARY)
-	help_navigation = VBoxContainer.new()
-	help_navigation.add_theme_constant_override("separation", 8)
+	help_title = $Body/HelpPanel/HelpContentPanel/CometPanel/HelpTitle
+	help_subtitle = $Body/HelpPanel/HelpContentPanel/CometPanel/HelpSubtitle
+	help_navigation = $Body/HelpPanel/HelpContentPanel/CometPanel/HelpNavigation
 	var panel: Panel = $Body/HelpPanel/HelpContentPanel/CometPanel
-	panel.add_child(help_title)
-	panel.add_child(help_subtitle)
-	panel.add_child(help_navigation)
-	for index in range(HELP_CONTENT.SECTION_NAMES_IT.size()):
-		var section_button := Button.new()
-		section_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		section_button.focus_mode = Control.FOCUS_ALL
+	for index in range(help_navigation.get_child_count()):
+		var section_button: Button = help_navigation.get_child(index)
 		section_button.pressed.connect(_select_help_section.bind(index))
-		help_navigation.add_child(section_button)
 		help_section_buttons.append(section_button)
 	for content: RichTextLabel in [help_ita, help_eng]:
 		content.fit_content = false
@@ -521,8 +509,16 @@ func _setup_help_page() -> void:
 	_refresh_help_page()
 
 func _layout_help_page() -> void:
+	if not automatic_layout:
+		return
 	if help_navigation == null:
 		return
+	var tabs: TabContainer = $Body/ModelPanel/Navbar
+	var tab_rect := tabs.get_tab_bar().get_global_rect()
+	var viewport_size := get_viewport().get_visible_rect().size
+	var frame: Panel = $Body/HelpPanel/HelpContentPanel
+	frame.offset_top = tab_rect.end.y + 12.0 - frame.anchor_top * viewport_size.y
+	frame.offset_bottom = -24.0
 	var panel: Panel = $Body/HelpPanel/HelpContentPanel/CometPanel
 	var margin := 24.0
 	var header_height := 68.0
