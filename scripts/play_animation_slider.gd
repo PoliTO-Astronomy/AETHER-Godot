@@ -18,6 +18,8 @@ func reset() -> void:
 	$Slider.value = 0
 func _on_play_btn_pressed() -> void:
 	_commit_focused_line_edit()
+	if not _valid_simulation_duration():
+		return
 	Util.is_simulation = true
 	get_tree().call_group("animation", "animation_started")
 	$PlayBtn.disabled = true
@@ -27,6 +29,8 @@ func _on_play_btn_pressed() -> void:
 
 func _on_play_instant_btn_pressed() -> void:
 	_commit_focused_line_edit()
+	if not _valid_simulation_duration():
+		return
 	Util.is_simulation = false
 	get_tree().call_group("animation", "animation_started")
 	$PlayBtn.disabled = true
@@ -73,6 +77,12 @@ func _commit_focused_line_edit() -> void:
 	var focused := get_viewport().gui_get_focus_owner()
 	if focused is LineEdit:
 		focused.release_focus()
+
+func _valid_simulation_duration() -> bool:
+	if get_node("/root/World/CometMesh").can_start_simulation():
+		return true
+	Util.create_popup("Invalid simulation duration", "Set a positive rotation period and number of rotations, with at least one integration step.")
+	return false
 		
 func is_stop_enabled() -> bool:
 	return not $StopBtn.disabled

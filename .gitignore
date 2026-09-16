@@ -5,6 +5,9 @@
 comet-models/
 *.exe
 *.cfg
+# Shared Godot export presets and editor plugin manifests
+!export_presets.cfg
+!addons/**/plugin.cfg
 *.txt
 config/
 build/
