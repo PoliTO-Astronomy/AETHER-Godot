@@ -12,7 +12,7 @@ config_version=5
 
 config/name="Project Aether"
 config/description="Analysis of Evolved Thermal Hydrodynamics in Emission Regions"
-config/version="0.9.9"
+config/version="0.99"
 run/main_scene="res://scenes/world.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
 config/icon="uid://2fs7kbok4x0d"

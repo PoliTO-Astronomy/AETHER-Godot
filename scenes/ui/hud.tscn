@@ -332,18 +332,17 @@ visible = false
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.842525
-anchor_top = 17.838900
+anchor_top = 17.8389
 anchor_right = 0.885771
-anchor_bottom = 17.838900
-offset_right = 6.000977
-offset_bottom = 36.979614
+anchor_bottom = 17.8389
+offset_top = 12.5421
+offset_right = 6.00098
+offset_bottom = 36.9796
 theme = ExtResource("2_7165f")
 theme_override_colors/font_color = Color(0.270588, 0.721569, 0.811765, 1)
 theme_override_font_sizes/font_size = 17
 text = "Run Model"
 metadata/_edit_use_anchors_ = true
-offset_left = 0.000000
-offset_top = 12.542114
 
 [node name="RunModelBtn" type="Panel" parent="Body/TabButtons" groups=["model_tab"]]
 visible = false
@@ -351,17 +350,14 @@ z_index = -2
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.812214
-anchor_top = 18.347500
+anchor_top = 18.3475
 anchor_right = 0.984297
-anchor_bottom = 20.889900
+anchor_bottom = 20.8899
+offset_top = 16.5362
 mouse_filter = 1
 theme = ExtResource("2_7165f")
 theme_override_styles/panel = SubResource("StyleBoxFlat_pkwgd")
 metadata/_edit_use_anchors_ = true
-offset_bottom = 0.000000
-offset_left = 0.000000
-offset_right = 0.000000
-offset_top = 16.536194
 
 [node name="ToggleModelGridBtn" type="Button" parent="Body/TabButtons" groups=["model_tab"]]
 visible = false
@@ -507,33 +503,31 @@ metadata/_edit_use_anchors_ = true
 visible = false
 layout_mode = 2
 anchor_left = 0.820641
-anchor_top = 19.878401
+anchor_top = 19.8784
 anchor_right = 0.820641
-anchor_bottom = 19.878401
-offset_right = 299.999023
-offset_bottom = 40.000000
+anchor_bottom = 19.8784
+offset_top = 4.0
+offset_right = 299.999
+offset_bottom = 40.0
 focus_mode = 0
 theme = ExtResource("2_7165f")
 text = "Save Image"
 metadata/_edit_use_anchors_ = true
-offset_left = 0.000000
-offset_top = 4.000000
 
 [node name="AnimationSlider" parent="Body/TabButtons" groups=["model_tab"] instance=ExtResource("10_xpjwy")]
 visible = false
 layout_mode = 2
 anchors_preset = 0
 anchor_left = 0.823246
-anchor_top = 18.538099
+anchor_top = 18.5381
 anchor_right = 0.971742
-anchor_bottom = 19.385599
+anchor_bottom = 19.3856
+offset_top = 16.5362
 offset_right = -0.255981
-offset_bottom = 31.534180
+offset_bottom = 31.5342
 size_flags_stretch_ratio = 0.45
 theme = ExtResource("2_7165f")
 num_steps = 500
-offset_left = 0.000000
-offset_top = 16.536194
 
 [node name="SaveNucleusBtn" type="Button" parent="Body/TabButtons" groups=["model_tab"]]
 visible = false
@@ -697,11 +691,12 @@ metadata/is_screenshot = false
 visible = false
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.965090
-anchor_top = 18.505301
+anchor_left = 0.96509
+anchor_top = 18.5053
 anchor_right = 0.977595
-anchor_bottom = 19.013800
-offset_top = 16.536255
+anchor_bottom = 19.0138
+offset_top = 16.5363
+offset_bottom = 16.5362
 tooltip_text = "Plot coma model of dust emissions trrajectories and density/diffusion according to parameters entered. Save image of the model according to time span set in Settings Tab.​
 INST for instantenous simulation. SIM for step-by-step automatic simulation."
 focus_next = NodePath("../OverlayColorButton")
@@ -709,9 +704,6 @@ focus_previous = NodePath("../../ScaleTab/Control/TelResolutionEdit")
 theme = ExtResource("2_7165f")
 texture_normal = ExtResource("15_8jlnj")
 metadata/_edit_use_anchors_ = true
-offset_bottom = 16.536194
-offset_left = 0.000000
-offset_right = 0.000000
 
 [node name="MiniNucleusToggleInfoBtn" type="TextureButton" parent="Body/TabButtons" groups=["model_tab"]]
 visible = false
@@ -782,6 +774,8 @@ offset_left = -6.99996
 offset_top = 168.0
 offset_right = 146.6
 offset_bottom = 214.0
+grow_horizontal = 1
+grow_vertical = 1
 theme = ExtResource("2_7165f")
 label = &"Radius"
 resize_type = &"radius"
@@ -811,8 +805,8 @@ valid_zero = true
 
 [node name="Slider" parent="Body/CometTab/Control/EditCometIncl" index="0"]
 visible = false
-offset_left = 31822.5
-offset_right = 31982.5
+offset_left = 32149.2
+offset_right = 32309.2
 scale = Vector2(-1, 1)
 theme = ExtResource("2_7165f")
 min_value = -90.0
@@ -829,6 +823,7 @@ theme_override_font_sizes/font_size = 14
 text = "Spin Axis Inclination (°)"
 
 [node name="SanitizedEdit" parent="Body/CometTab/Control/EditCometIncl" index="2"]
+anchors_preset = 0
 anchor_left = 0.0
 anchor_right = 0.0
 anchor_bottom = 0.0
@@ -877,6 +872,7 @@ theme_override_font_sizes/font_size = 14
 text = "Spin Axis PA (°)"
 
 [node name="SanitizedEdit" parent="Body/CometTab/Control/EditCometDir" index="2"]
+anchors_preset = 0
 anchor_left = 0.0
 anchor_right = 0.0
 anchor_bottom = 0.0
@@ -899,6 +895,8 @@ offset_left = -6.99996
 offset_top = 270.0
 offset_right = 528.999
 offset_bottom = 301.0
+grow_horizontal = 1
+grow_vertical = 1
 theme = ExtResource("2_7165f")
 label = &"Dec (°)"
 resize_type = &"delta_p"
@@ -933,6 +931,7 @@ theme_override_font_sizes/font_size = 14
 text = "Dec (°)"
 
 [node name="SanitizedEdit" parent="Body/CometTab/Control/DeltaPSanEdit" index="2"]
+anchors_preset = 0
 anchor_left = 0.0
 anchor_right = 0.0
 anchor_bottom = 0.0
@@ -956,6 +955,8 @@ offset_left = -6.99996
 offset_top = 231.0
 offset_right = 528.999
 offset_bottom = 262.0
+grow_horizontal = 1
+grow_vertical = 1
 theme = ExtResource("2_7165f")
 label = &"RA (°)"
 resize_type = &"alpha_p"
@@ -986,6 +987,7 @@ theme_override_font_sizes/font_size = 14
 text = "RA (°)"
 
 [node name="SanitizedEdit" parent="Body/CometTab/Control/AlphaPSanEdit" index="2"]
+anchors_preset = 0
 anchor_left = 0.0
 anchor_right = 0.0
 anchor_bottom = 0.0
@@ -1229,14 +1231,13 @@ anchor_left = -0.00181899
 anchor_top = 0.099368
 anchor_right = 0.68014
 anchor_bottom = 0.177778
-offset_right = 14.699997
-offset_bottom = 33.066677
+offset_top = 5.76687
+offset_right = 14.7
+offset_bottom = 33.0667
 scale = Vector2(0.9, 0.9)
 theme = ExtResource("2_7165f")
 text = "Distance r (AU)"
 metadata/_edit_use_anchors_ = true
-offset_left = 0.000001
-offset_top = 5.766872
 
 [node name="EditSunCometDist" parent="Body/CometTab/Control" instance=ExtResource("20_mw7vf")]
 layout_mode = 1
@@ -1244,9 +1245,10 @@ anchor_left = 0.675258
 anchor_top = 0.094697
 anchor_right = 0.675258
 anchor_bottom = 0.094697
-offset_top = 2.000015
-offset_right = 145.127823
-offset_bottom = 38.000015
+offset_left = 36.9998
+offset_top = 2.00002
+offset_right = 145.128
+offset_bottom = 38.0
 grow_horizontal = 2
 grow_vertical = 2
 focus_next = NodePath("../EditSunIncl/SanitizedEdit")
@@ -1255,7 +1257,6 @@ theme = ExtResource("2_7165f")
 text = "0"
 resize_type = &"sun_comet_distance"
 higher_bound = 10.0
-offset_left = 36.999817
 
 [node name="SubsolarPLabel" type="Label" parent="Body/CometTab/Control"]
 layout_mode = 1
@@ -1264,14 +1265,13 @@ anchor_left = -0.00181923
 anchor_top = 0.301695
 anchor_right = 0.837872
 anchor_bottom = 0.380104
-offset_right = 18.100006
-offset_bottom = 27.652634
+offset_top = 0.352631
+offset_right = 18.1
+offset_bottom = 27.6526
 scale = Vector2(0.9, 0.9)
 theme = ExtResource("2_7165f")
 text = "Subsolar  Latitude"
 metadata/_edit_use_anchors_ = true
-offset_left = 0.000002
-offset_top = 0.352631
 
 [node name="SubsolarPLineEdit" type="LineEdit" parent="Body/CometTab/Control"]
 layout_mode = 1
@@ -1280,15 +1280,14 @@ anchor_left = 0.865979
 anchor_top = 0.284091
 anchor_right = 0.865979
 anchor_bottom = 0.284091
-offset_right = 73.000000
-offset_bottom = 36.000076
+offset_top = 7.6e-05
+offset_right = 73.0
+offset_bottom = 36.0001
 focus_mode = 0
 theme = ExtResource("2_7165f")
 theme_override_colors/font_uneditable_color = Color(0.717647, 0.780392, 0.811765, 1)
 editable = false
 metadata/_edit_use_anchors_ = true
-offset_left = 0.000000
-offset_top = 0.000076
 
 [node name="HSeparator2" type="HSeparator" parent="Body/CometTab/Control"]
 layout_mode = 1
@@ -1336,9 +1335,9 @@ anchor_left = 0.917828
 anchor_top = 1.81506
 anchor_right = 0.917828
 anchor_bottom = 1.81506
-offset_top = 2.823700
-offset_right = 61.127808
-offset_bottom = 38.823669
+offset_top = 2.8237
+offset_right = 61.1278
+offset_bottom = 38.8237
 grow_horizontal = 2
 grow_vertical = 2
 tooltip_text = "Optical albedo. Stored as a dust property; it is not used in the Beta calculation."
@@ -1348,7 +1347,6 @@ theme = ExtResource("2_7165f")
 text = "0"
 resize_type = &"albedo"
 higher_bound = 1.0
-offset_left = 0.000000
 
 [node name="AlbedoLabel" type="Label" parent="Body/CometTab/Control"]
 layout_mode = 1
@@ -1357,15 +1355,14 @@ anchor_left = 0.00818673
 anchor_top = 1.80949
 anchor_right = 0.319012
 anchor_bottom = 1.8879
-offset_right = 6.699989
-offset_bottom = 36.593872
+offset_top = 9.29419
+offset_right = 6.69999
+offset_bottom = 36.5939
 scale = Vector2(0.9, 0.9)
 tooltip_text = "Optical property, excluded from the Beta calculation"
 theme = ExtResource("2_7165f")
 text = "Albedo"
 metadata/_edit_use_anchors_ = true
-offset_left = -0.000000
-offset_top = 9.294189
 
 [node name="EditParticleDiameter" parent="Body/CometTab/Control" instance=ExtResource("20_mw7vf")]
 layout_mode = 1
@@ -1373,9 +1370,9 @@ anchor_left = 2.33505
 anchor_top = 1.6553
 anchor_right = 2.33505
 anchor_bottom = 1.6553
-offset_top = 3.000244
-offset_right = 73.128174
-offset_bottom = 39.000244
+offset_top = 3.00024
+offset_right = 73.1282
+offset_bottom = 39.0002
 grow_horizontal = 2
 grow_vertical = 2
 focus_next = NodePath("../EditAlbedo")
@@ -1384,7 +1381,6 @@ theme = ExtResource("2_7165f")
 text = "0"
 resize_type = &"particle_diameter"
 higher_bound = 15.0
-offset_left = 0.000000
 
 [node name="ParticleDiameterLabel" type="Label" parent="Body/CometTab/Control"]
 layout_mode = 1
@@ -1393,14 +1389,13 @@ anchor_left = 1.48242
 anchor_top = 1.65997
 anchor_right = 2.21541
 anchor_bottom = 1.73838
-offset_right = 15.800201
-offset_bottom = 34.067139
+offset_top = 6.76733
+offset_right = 15.8002
+offset_bottom = 34.0671
 scale = Vector2(0.9, 0.9)
 theme = ExtResource("2_7165f")
 text = "Dust Diameter (mm)"
 metadata/_edit_use_anchors_ = true
-offset_left = 0.000000
-offset_top = 6.767334
 
 [node name="EditParticleDensity" parent="Body/CometTab/Control" instance=ExtResource("20_mw7vf")]
 layout_mode = 1
@@ -1408,9 +1403,9 @@ anchor_left = 0.917526
 anchor_top = 1.6553
 anchor_right = 0.917526
 anchor_bottom = 1.6553
-offset_top = 3.000244
-offset_right = 61.128098
-offset_bottom = 39.000244
+offset_top = 3.00024
+offset_right = 61.1281
+offset_bottom = 39.0002
 grow_horizontal = 2
 grow_vertical = 2
 focus_next = NodePath("../EditParticleDiameter")
@@ -1419,7 +1414,6 @@ theme = ExtResource("2_7165f")
 text = "0"
 resize_type = &"particle_density"
 higher_bound = 5.0
-offset_left = 0.000000
 
 [node name="ParticleDensityLabel" type="Label" parent="Body/CometTab/Control"]
 layout_mode = 1
@@ -1428,14 +1422,13 @@ anchor_left = 0.0103093
 anchor_top = 1.65932
 anchor_right = 0.789689
 anchor_bottom = 1.73773
-offset_right = 16.800003
-offset_bottom = 34.238770
+offset_top = 6.93896
+offset_right = 16.8
+offset_bottom = 34.2388
 scale = Vector2(0.9, 0.9)
 theme = ExtResource("2_7165f")
 text = "Dust density (g/cm³)"
 metadata/_edit_use_anchors_ = true
-offset_left = -0.000001
-offset_top = 6.938965
 
 [node name="BetaValLineEdit" type="LineEdit" parent="Body/CometTab/Control"]
 layout_mode = 1
@@ -1707,12 +1700,13 @@ metadata/_edit_use_anchors_ = true
 
 [node name="NumRotationEdit" parent="Body/CometTab/Control" instance=ExtResource("20_mw7vf")]
 layout_mode = 1
+anchors_preset = 0
 anchor_right = 0.0
 anchor_bottom = 0.0
-offset_left = 360.039001
-offset_top = 191.999725
-offset_right = 528.999023
-offset_bottom = 227.999725
+offset_left = 360.039
+offset_top = 192.0
+offset_right = 528.999
+offset_bottom = 228.0
 tooltip_text = "Number of nucleus rotations included in the model"
 focus_next = NodePath("../AlphaPSanEdit/SanitizedEdit")
 focus_previous = NodePath("../../../SimTab/Control/FrequencyEdit/SanitizedEdit")
@@ -1725,10 +1719,10 @@ higher_bound = -1.0
 [node name="NumRotationLabel" type="Label" parent="Body/CometTab/Control"]
 layout_mode = 1
 anchors_preset = -1
-offset_left = 360.039001
-offset_top = 171.999725
-offset_right = 528.999023
-offset_bottom = 195.999725
+offset_left = 360.039
+offset_top = 172.0
+offset_right = 528.999
+offset_bottom = 196.0
 tooltip_text = "Number of rotations"
 mouse_filter = 0
 theme = ExtResource("2_7165f")
@@ -1789,20 +1783,19 @@ metadata/_edit_use_anchors_ = true
 [node name="JetTable" type="VBoxContainer" parent="Body/JetsTab/Control" node_paths=PackedStringArray("content_node", "scroll_container") groups=["jet_table", "load", "save"]]
 z_index = 1
 layout_mode = 2
-anchor_left = 2.846160
-anchor_top = 61.010899
-anchor_right = 43.707699
-anchor_bottom = 61.010899
-offset_right = 132.799988
-offset_bottom = 10.000000
+anchor_left = 2.84616
+anchor_top = 61.0109
+anchor_right = 43.7077
+anchor_bottom = 61.0109
+offset_top = 10.0
+offset_right = 132.8
+offset_bottom = 10.0
 scale = Vector2(0.8, 0.8)
 theme = ExtResource("2_7165f")
 script = ExtResource("25_2kjjy")
 content_node = NodePath("JetBodyScrollBar/JetBody")
 scroll_container = NodePath("JetBodyScrollBar")
 metadata/_edit_use_anchors_ = true
-offset_left = 0.000000
-offset_top = 10.000000
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Body/JetsTab/Control/JetTable"]
 layout_mode = 2
@@ -1820,8 +1813,8 @@ theme = ExtResource("2_7165f")
 theme_override_font_sizes/font_size = 16
 text = "ID"
 horizontal_alignment = 1
-metadata/_edit_use_anchors_ = true
 vertical_alignment = 1
+metadata/_edit_use_anchors_ = true
 
 [node name="SpeedLabel" type="Label" parent="Body/JetsTab/Control/JetTable/VBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(48, 44)
@@ -1829,11 +1822,12 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme = ExtResource("2_7165f")
 theme_override_font_sizes/font_size = 16
-text = "Speed\n(m/s)"
+text = "Speed
+(m/s)"
 horizontal_alignment = 1
+vertical_alignment = 1
 autowrap_mode = 2
 metadata/_edit_use_anchors_ = true
-vertical_alignment = 1
 
 [node name="LatitudeLabel" type="Label" parent="Body/JetsTab/Control/JetTable/VBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(48, 44)
@@ -1843,9 +1837,9 @@ theme = ExtResource("2_7165f")
 theme_override_font_sizes/font_size = 16
 text = "Lat. (°)"
 horizontal_alignment = 1
+vertical_alignment = 1
 autowrap_mode = 2
 metadata/_edit_use_anchors_ = true
-vertical_alignment = 1
 
 [node name="LongitudeLabel" type="Label" parent="Body/JetsTab/Control/JetTable/VBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(48, 44)
@@ -1855,8 +1849,8 @@ theme = ExtResource("2_7165f")
 theme_override_font_sizes/font_size = 16
 text = "Long. (°)"
 horizontal_alignment = 1
-metadata/_edit_use_anchors_ = true
 vertical_alignment = 1
+metadata/_edit_use_anchors_ = true
 
 [node name="DensityLabel" type="Label" parent="Body/JetsTab/Control/JetTable/VBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(48, 44)
@@ -1865,11 +1859,12 @@ size_flags_horizontal = 3
 tooltip_text = "Total number of particles emitted by each jet per integration step"
 theme = ExtResource("2_7165f")
 theme_override_font_sizes/font_size = 16
-text = "Particles\n(n/step)"
+text = "Particles
+(n/step)"
 horizontal_alignment = 1
+vertical_alignment = 1
 autowrap_mode = 2
 metadata/_edit_use_anchors_ = true
-vertical_alignment = 1
 
 [node name="DiffusionLabel" type="Label" parent="Body/JetsTab/Control/JetTable/VBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(48, 44)
@@ -1877,11 +1872,12 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme = ExtResource("2_7165f")
 theme_override_font_sizes/font_size = 16
-text = "Diffus.\n(%)"
+text = "Diffus.
+(%)"
 horizontal_alignment = 1
+vertical_alignment = 1
 autowrap_mode = 2
 metadata/_edit_use_anchors_ = true
-vertical_alignment = 1
 
 [node name="ColorLabel" type="Label" parent="Body/JetsTab/Control/JetTable/VBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(48, 44)
@@ -1891,8 +1887,8 @@ theme = ExtResource("2_7165f")
 theme_override_font_sizes/font_size = 16
 text = "Color"
 horizontal_alignment = 1
-metadata/_edit_use_anchors_ = true
 vertical_alignment = 1
+metadata/_edit_use_anchors_ = true
 
 [node name="ToggleLabel" type="Label" parent="Body/JetsTab/Control/JetTable/VBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(40, 44)
@@ -1902,8 +1898,8 @@ theme = ExtResource("2_7165f")
 theme_override_font_sizes/font_size = 16
 text = "Toggle"
 horizontal_alignment = 1
-metadata/_edit_use_anchors_ = true
 vertical_alignment = 1
+metadata/_edit_use_anchors_ = true
 
 [node name="RemoveLabel" type="Label" parent="Body/JetsTab/Control/JetTable/VBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(40, 44)
@@ -1913,8 +1909,8 @@ theme = ExtResource("2_7165f")
 theme_override_font_sizes/font_size = 16
 text = "Remove"
 horizontal_alignment = 1
-metadata/_edit_use_anchors_ = true
 vertical_alignment = 1
+metadata/_edit_use_anchors_ = true
 
 [node name="JetBodyScrollBar" type="ScrollContainer" parent="Body/JetsTab/Control/JetTable"]
 visible = false
@@ -1939,12 +1935,13 @@ text = "Add new jet"
 
 [node name="JetRateEdit" parent="Body/JetsTab/Control" instance=ExtResource("20_mw7vf")]
 layout_mode = 1
-anchor_left = 39.307899
-anchor_top = 57.666698
-anchor_right = 39.307899
-anchor_bottom = 57.666698
-offset_right = 47.996002
-offset_bottom = 43.000000
+anchor_left = 39.3079
+anchor_top = 57.6667
+anchor_right = 39.3079
+anchor_bottom = 57.6667
+offset_top = 7.0
+offset_right = 47.996
+offset_bottom = 43.0
 tooltip_text = "Time interval between two dust-emission steps. Minimum: 0.5 minutes."
 focus_next = NodePath("../../../ScaleTab/Control/DeltaAUEdit")
 focus_previous = NodePath("../../../SimTab/Control/ImageOpacitySlider")
@@ -1953,26 +1950,22 @@ text = "5.0"
 resize_type = &"jet_rate"
 lower_bound = 0.5
 higher_bound = -1.0
-offset_left = 0.000000
-offset_top = 7.000000
 
 [node name="JetRateLabel" type="Label" parent="Body/JetsTab/Control"]
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 25.231001
-anchor_top = 57.212200
-anchor_right = 38.539001
-anchor_bottom = 60.848499
-offset_bottom = 14.208252
+anchor_left = 25.231
+anchor_top = 57.2122
+anchor_right = 38.539
+anchor_bottom = 60.8485
+offset_top = 7.0
+offset_bottom = 14.2083
 tooltip_text = "Time interval between two dust-emission steps. Minimum: 0.5 minutes."
 mouse_filter = 0
 theme = ExtResource("2_7165f")
 text = "Integration step (min)"
 vertical_alignment = 1
 metadata/_edit_use_anchors_ = true
-offset_left = 0.000000
-offset_right = 0.000000
-offset_top = 7.000000
 
 [node name="SimTab" type="CanvasLayer" parent="Body" groups=["i", "load", "model_tab", "phi", "save", "true_anomaly"]]
 layer = 3
@@ -2387,19 +2380,18 @@ metadata/_edit_use_anchors_ = true
 
 [node name="DeltaAUEdit" parent="Body/ScaleTab/Control" instance=ExtResource("20_mw7vf")]
 layout_mode = 1
-anchor_left = 8.125000
-anchor_top = 1.325000
-anchor_right = 8.125000
-anchor_bottom = 1.325000
-offset_right = 88.001648
-offset_bottom = 36.000000
+anchor_left = 8.125
+anchor_top = 1.325
+anchor_right = 8.125
+anchor_bottom = 1.325
+offset_left = 32.0006
+offset_right = 88.0016
+offset_bottom = 36.0
 focus_next = NodePath("../TelImageSizeEdit")
 focus_previous = NodePath("../../../JetsTab/Control/JetRateEdit")
 theme = ExtResource("2_7165f")
 resize_type = &"delta_au"
 higher_bound = 1000.0
-offset_left = 32.000641
-offset_top = 0.000000
 
 [node name="TelResolutionlabel" type="Label" parent="Body/ScaleTab/Control"]
 layout_mode = 1
@@ -2905,6 +2897,7 @@ metadata/_edit_use_anchors_ = true
 
 [node name="StepSizeSanEdit" parent="Body/JPLTab/Control" instance=ExtResource("20_mw7vf")]
 layout_mode = 1
+anchors_preset = 0
 anchor_right = 0.0
 anchor_bottom = 0.0
 offset_left = 493.84
@@ -3909,7 +3902,7 @@ metadata/_edit_use_anchors_ = true
 
 [node name="SubViewport" type="SubViewport" parent="Viewport/Panel/CoordinateGrid/AspectRatioContainer/SubViewportContainer" node_paths=PackedStringArray("_fr_camera", "_rot_camera") groups=["camera"]]
 handle_input_locally = false
-size = Vector2i(900, 900)
+size = Vector2i(2, 2)
 render_target_update_mode = 0
 script = ExtResource("34_fwc2o")
 _fr_camera = NodePath("FreeRoamCamera")
@@ -4136,7 +4129,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_qmm8d")
 
 [node name="CreditsPanel" type="Panel" parent="CreditsPageLayer/Background" groups=["credits_tab"]]
 visible = false
-anchors_preset = -1
+layout_mode = 0
 anchor_left = 0.0155663
 anchor_top = 0.0304569
 anchor_right = 0.986044
@@ -4168,6 +4161,7 @@ text = "Versione 0.9.7  •  Godot 4.4-stable (official)"
 
 [node name="CreditsContent" type="RichTextLabel" parent="CreditsPageLayer/Background/CreditsPanel"]
 layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 302.0
@@ -4214,6 +4208,71 @@ Godot Engine — Godot contributors
 Il repository AETHER contiene la GNU General Public License, versione 3.
 Le licenze di Godot e dei suoi componenti sono disponibili nelle schede sopra.
 "
+
+[node name="Navigation" type="VBoxContainer" parent="CreditsPageLayer/Background/CreditsPanel"]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 90.0
+offset_right = 274.0
+offset_bottom = 849.113
+theme = ExtResource("2_7165f")
+theme_override_constants/separation = 8
+
+[node name="Section0" type="Button" parent="CreditsPageLayer/Background/CreditsPanel/Navigation"]
+layout_mode = 2
+theme = ExtResource("2_7165f")
+text = "Contributori"
+alignment = 0
+
+[node name="Section1" type="Button" parent="CreditsPageLayer/Background/CreditsPanel/Navigation"]
+layout_mode = 2
+theme = ExtResource("2_7165f")
+text = "Licenza AETHER"
+alignment = 0
+
+[node name="Section2" type="Button" parent="CreditsPageLayer/Background/CreditsPanel/Navigation"]
+layout_mode = 2
+theme = ExtResource("2_7165f")
+text = "Licenza Godot"
+alignment = 0
+
+[node name="Section3" type="Button" parent="CreditsPageLayer/Background/CreditsPanel/Navigation"]
+layout_mode = 2
+theme = ExtResource("2_7165f")
+text = "Terze parti"
+alignment = 0
+
+[node name="ButtonIta" type="Button" parent="CreditsPageLayer/Background/CreditsPanel"]
+layout_mode = 1
+anchors_preset = -1
+offset_left = 1522.0
+offset_top = 18.0
+offset_right = 1648.0
+offset_bottom = 56.0
+theme = ExtResource("2_7165f")
+theme_override_constants/icon_max_width = 22
+disabled = true
+toggle_mode = true
+button_pressed = true
+text = "IT  Italiano"
+icon = ExtResource("32_i2p5g")
+expand_icon = true
+metadata/_edit_use_anchors_ = true
+
+[node name="ButtonEng" type="Button" parent="CreditsPageLayer/Background/CreditsPanel"]
+layout_mode = 1
+anchors_preset = -1
+offset_left = 1658.0
+offset_top = 18.0
+offset_right = 1784.0
+offset_bottom = 56.0
+theme = ExtResource("2_7165f")
+theme_override_constants/icon_max_width = 22
+toggle_mode = true
+text = "EN  English"
+icon = ExtResource("33_3uehh")
+expand_icon = true
+metadata/_edit_use_anchors_ = true
 
 [node name="TopNavigationControls" type="CanvasLayer" parent="."]
 layer = 30
@@ -4404,126 +4463,6 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_7tx3c")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_7tx3c")
 theme_override_styles/normal = SubResource("StyleBoxFlat_nmteq")
 text = "−"
-
-
-[node name="Label" parent="Body/SimTab/Control/FrequencyEdit" index="1"]
-layout_mode = 0
-anchor_left = 0.0
-anchor_top = 0.0
-anchor_right = 0.0
-anchor_bottom = 0.0
-offset_left = 0.0
-offset_top = 4.0
-offset_right = 189.44
-offset_bottom = 28.0
-scale = Vector2(1, 1)
-theme_override_font_sizes/font_size = 14
-
-[node name="Slider" parent="Body/SimTab/Control/FrequencyEdit" index="0"]
-offset_bottom = 7.446339
-offset_left = 0.000000
-offset_right = 0.000000
-offset_top = 7.446339
-
-[node name="SanitizedEdit" parent="Body/CometTab/Control/EditRadius" index="2"]
-offset_bottom = 25.041981
-offset_left = 0.000000
-offset_right = 0.000000
-offset_top = 23.999725
-
-[node name="SanitizedEdit" parent="Body/SimTab/Control/FrequencyEdit" index="2"]
-offset_bottom = 25.041981
-offset_left = -0.000015
-offset_right = -0.000015
-offset_top = 23.999725
-
-[node name="Label" parent="Body/CometTab/Control/EditRadius" index="1"]
-layout_mode = 0
-anchor_left = 0.0
-anchor_top = 0.0
-anchor_right = 0.0
-anchor_bottom = 0.0
-offset_left = 0.0
-offset_top = 4.0
-offset_right = 153.6
-offset_bottom = 28.0
-scale = Vector2(1, 1)
-theme_override_font_sizes/font_size = 14
-
-[node name="Slider" parent="Body/CometTab/Control/EditRadius" index="0"]
-offset_bottom = 7.446339
-offset_left = 0.000000
-offset_right = 0.000000
-offset_top = 7.446339
-
-
-[node name="Navigation" type="VBoxContainer" parent="CreditsPageLayer/Background/CreditsPanel"]
-layout_mode = 0
-offset_left = 24.0
-offset_top = 90.0
-offset_right = 274.0
-offset_bottom = 849.113
-theme = ExtResource("2_7165f")
-theme_override_constants/separation = 8
-
-
-[node name="Section0" type="Button" parent="CreditsPageLayer/Background/CreditsPanel/Navigation"]
-layout_mode = 2
-theme = ExtResource("2_7165f")
-text = "Contributori"
-alignment = 0
-
-[node name="Section1" type="Button" parent="CreditsPageLayer/Background/CreditsPanel/Navigation"]
-layout_mode = 2
-theme = ExtResource("2_7165f")
-text = "Licenza AETHER"
-alignment = 0
-
-[node name="Section2" type="Button" parent="CreditsPageLayer/Background/CreditsPanel/Navigation"]
-layout_mode = 2
-theme = ExtResource("2_7165f")
-text = "Licenza Godot"
-alignment = 0
-
-[node name="Section3" type="Button" parent="CreditsPageLayer/Background/CreditsPanel/Navigation"]
-layout_mode = 2
-theme = ExtResource("2_7165f")
-text = "Terze parti"
-alignment = 0
-
-[node name="ButtonIta" type="Button" parent="CreditsPageLayer/Background/CreditsPanel"]
-layout_mode = 1
-anchors_preset = -1
-offset_left = 1522.0
-offset_top = 18.0
-offset_right = 1648.0
-offset_bottom = 56.0
-theme = ExtResource("2_7165f")
-theme_override_constants/icon_max_width = 22
-disabled = true
-toggle_mode = true
-button_pressed = true
-text = "IT  Italiano"
-icon = ExtResource("32_i2p5g")
-expand_icon = true
-metadata/_edit_use_anchors_ = true
-
-
-[node name="ButtonEng" type="Button" parent="CreditsPageLayer/Background/CreditsPanel"]
-layout_mode = 1
-anchors_preset = -1
-offset_left = 1658.0
-offset_top = 18.0
-offset_right = 1784.0
-offset_bottom = 56.0
-theme = ExtResource("2_7165f")
-theme_override_constants/icon_max_width = 22
-toggle_mode = true
-text = "EN  English"
-icon = ExtResource("33_3uehh")
-expand_icon = true
-metadata/_edit_use_anchors_ = true
-
 
 [connection signal="tab_changed" from="Body/ModelPanel/Navbar" to="Body" method="_on_navbar_tab_changed"]
 [connection signal="pressed" from="Body/TabButtons/ToggleModelGridBtn" to="Body" method="_on_toggle_model_grid_btn_pressed"]
