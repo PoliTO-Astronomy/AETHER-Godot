@@ -59,6 +59,10 @@ var speed_sim: int = 1
 
 var reload_timer: Timer
 var syncing_axis_coordinates := false
+var simulation_origin := Quaternion.IDENTITY
+var applied_parameters: Array = []
+var requested_parameters: Array = []
+var rebuilding_simulation := false
 var is_holding_next := false
 var hold_started_next := false
 var is_holding_prev := false
@@ -127,13 +131,44 @@ func _ready() -> void:
 	update_velocity_axis()
 
 func request_reload():
-	reload_timer.start()
+	if is_instance_valid(reload_timer) and animation_slider.is_stop_enabled() and not rebuilding_simulation:
+		requested_parameters = _simulation_parameters()
+		reload_timer.start()
 
 func _on_reload_timeout():
-	rerun_instant_simulation_for_new_date()
+	if not animation_slider.is_stop_enabled():
+		return
+	var paused := animation_state == ANIMATION_STATE.PAUSED
+	rebuilding_simulation = true
+	animation_stopped()
+	quaternion = simulation_origin
+	if frequency <= 0 or num_rotation <= 0 or int(num_rotation * frequency * 60 / jet_rate) <= 0:
+		animation_slider._on_stop_btn_pressed()
+	else:
+		animation_started()
+		if paused and Util.is_simulation:
+			animation_slider._on_pause_btn_pressed()
+	rebuilding_simulation = false
+
+func _simulation_parameters() -> Array:
+	var values: Array = [mesh.radius, frequency, num_rotation, jet_rate,
+		Util.comet_direction, Util.comet_inclination, Util.alpha_p, Util.delta_p,
+		Util.sun_direction_vector, Util.sun_comet_distance,
+		Util.particle_diameter, Util.particle_density, Util.albedo, current_date_index]
+	for emitter: Emitter in get_tree().get_nodes_in_group("emitter"):
+		values.append([emitter.get_instance_id(), emitter.latitude, emitter.longitude,
+			emitter.speed, emitter.density, emitter.diffusion, emitter.color])
+	return values
 		
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:
+	if animation_slider.is_stop_enabled() and not rebuilding_simulation:
+		var parameters := _simulation_parameters()
+		if parameters != applied_parameters and parameters != requested_parameters:
+			request_reload()
+		# Do not advance particles whose parameters no longer match their buffers.
+		if reload_timer.time_left > 0:
+			return
 	match animation_state:
 		ANIMATION_STATE.STARTED, ANIMATION_STATE.RESUMED:
 			if n_steps <= 0:
@@ -141,6 +176,8 @@ func _process(_delta: float) -> void:
 				quaternion = Util.equatorial_rotation
 			else:
 				for _i in speed_sim:
+					if n_steps <= 0:
+						break
 					tick(step_counter)
 					n_steps -= 1
 					step_counter += 1
@@ -204,9 +241,15 @@ func simulation_setup() -> void:
 	n_steps = int(num_rotation * frequency * 60 / jet_rate)
 	angle_per_step = 1.0 / (frequency * 60.0 / jet_rate) * 360.0
 	animation_slider.set_step_rate(100.0 / n_steps)
+	simulation_origin = quaternion
+	applied_parameters = _simulation_parameters()
+	requested_parameters = applied_parameters.duplicate(true)
 
 	
 ## Called by play_animation_slider._on_play_btn_pressed
+func can_start_simulation() -> bool:
+	return frequency > 0 and num_rotation > 0 and int(num_rotation * frequency * 60 / maxf(jet_rate, Util.MIN_INTEGRATION_STEP_MINUTES)) > 0
+
 func animation_started() -> void:
 	if not Util.is_simulation:
 		instant_simulation()
@@ -237,7 +280,10 @@ func animation_paused() -> void:
 
 ## Called by play_animation_slider._on_stop_btn_pressed
 func animation_stopped() -> void:
+	if is_instance_valid(reload_timer):
+		reload_timer.stop()
 	animation_state = ANIMATION_STATE.STOPPED
+	quaternion = simulation_origin
 
 	#reset_rotation()
 	# delete all particles
@@ -762,6 +808,7 @@ func update_comet_orientation() -> void:
 	# debug_sphere.global_position = global_transform.origin + direction * mesh.radius * 3
 	point_y_axis_toward(global_transform.origin + direction)
 	get_tree().call_group("emitter", "update_norm")
+	simulation_origin = quaternion
 
 func rerun_instant_simulation_for_new_date() -> void:
 	get_tree().call_group("animation", "animation_stopped")

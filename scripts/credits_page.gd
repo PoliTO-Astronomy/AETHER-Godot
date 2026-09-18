@@ -34,10 +34,13 @@ func _set_language(value: String) -> void:
 
 func _contributor_content() -> String:
 	var text := contributor_text.replace("nelle schede sopra", "nelle sezioni a sinistra")
+	text += "\n\n[font_size=20][color=#45b8cf]Calendario[/color][/font_size]\nCalendar Button — Ivan P. Skodje\n[url=https://github.com/ivanskodje-godotengine/godot-plugin-calendar-button]Repository originale[/url] • MIT\nAdattato per AETHER e Godot 4. Testo della licenza nella sezione Terze parti.\n"
 	if language == "it":
 		return text
 	var translations := {
 		"Strumento per simulare e visualizzare le traiettorie delle polveri emesse dai getti cometari.": "A tool for simulating and visualizing dust trajectories emitted by cometary jets.",
+		"Calendario": "Calendar", "Repository originale": "Original repository",
+		"Adattato per AETHER e Godot 4. Testo della licenza nella sezione Terze parti.": "Adapted for AETHER and Godot 4. License text in the Third-party notices section.",
 		"Supervisione": "Supervision", "Sviluppo AETHER": "AETHER Development",
 		"Effemeridi": "Ephemerides", "Motore grafico": "Graphics engine", "Licenze": "Licenses",
 		"Il repository AETHER contiene la GNU General Public License, versione 3.": "The AETHER repository includes the GNU General Public License, version 3.",
@@ -64,6 +67,8 @@ func _select_section(index: int) -> void:
 		3:
 			content.bbcode_enabled = false
 			var text := "Godot — attribuzioni e copyright dei componenti inclusi\n\n" if language == "it" else "Godot — attribution and copyright of bundled components\n\n"
+			var calendar_notice := "Adattato per AETHER e Godot 4. Licenza originale MIT, conservata integralmente.\n\n" if language == "it" else "Adapted for AETHER and Godot 4. Original MIT license reproduced in full.\n\n"
+			text = "Calendar Button — Ivan P. Skodje\nhttps://github.com/ivanskodje-godotengine/godot-plugin-calendar-button\n" + calendar_notice + LICENSES.CALENDAR + "\n\n" + text
 			for component in Engine.get_copyright_info():
 				text += str(component["name"]) + "\n"
 				for part in component["parts"]:
