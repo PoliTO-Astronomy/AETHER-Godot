@@ -387,6 +387,19 @@ theme = ExtResource("2_7165f")
 toggle_mode = true
 text = "Overlays: White"
 
+[node name="ToggleDirectionsBtn" type="Button" parent="Body/TabButtons" groups=["model_tab"]]
+visible = false
+layout_mode = 0
+anchor_left = 0.51
+anchor_top = 20.0212
+anchor_right = 0.55
+anchor_bottom = 20.8687
+tooltip_text = "Show or hide the North, Sun and velocity direction indicator"
+focus_mode = 0
+theme = ExtResource("2_7165f")
+toggle_mode = true
+text = "NSV"
+
 [node name="ToggleNucleusGridBtn" type="Button" parent="Body/TabButtons" groups=["model_tab"]]
 visible = false
 layout_mode = 1
@@ -2030,8 +2043,8 @@ layout_mode = 1
 anchors_preset = -1
 offset_left = 1576.0
 offset_top = 616.0
-offset_right = 1718.0
-offset_bottom = 658.0
+offset_right = 1638.0
+offset_bottom = 638.0
 theme = ExtResource("2_7165f")
 theme_override_font_sizes/font_size = 14
 text = "Model: 100%"
@@ -2040,10 +2053,10 @@ metadata/_edit_use_anchors_ = true
 [node name="TransparencySlider" type="HSlider" parent="Body/SimTab/Control"]
 layout_mode = 1
 anchors_preset = -1
-offset_left = 1576.0
-offset_top = 638.0
-offset_right = 1718.0
-offset_bottom = 660.0
+offset_left = 1638.0
+offset_top = 616.0
+offset_right = 1688.0
+offset_bottom = 638.0
 focus_next = NodePath("../ImageOpacitySlider")
 focus_previous = NodePath("../../../CometTab/Control/EditAlbedo")
 theme = ExtResource("2_7165f")
@@ -2055,9 +2068,9 @@ metadata/_edit_use_anchors_ = true
 
 [node name="ImageOpacityLabel" type="Label" parent="Body/SimTab/Control"]
 layout_mode = 0
-offset_left = 1730.0
+offset_left = 1700.0
 offset_top = 616.0
-offset_right = 1872.0
+offset_right = 1778.0
 offset_bottom = 638.0
 theme = ExtResource("2_7165f")
 theme_override_font_sizes/font_size = 14
@@ -2065,16 +2078,63 @@ text = "Image: 100%"
 
 [node name="ImageOpacitySlider" type="HSlider" parent="Body/SimTab/Control"]
 layout_mode = 0
-offset_left = 1730.0
-offset_top = 638.0
-offset_right = 1872.0
-offset_bottom = 660.0
+offset_left = 1778.0
+offset_top = 616.0
+offset_right = 1840.0
+offset_bottom = 638.0
 tooltip_text = "CCD image opacity: 0% hidden, 100% opaque"
 focus_next = NodePath("../../../JetsTab/Control/JetRateEdit")
 focus_previous = NodePath("../TransparencySlider")
 theme = ExtResource("2_7165f")
 max_value = 1.0
 step = 0.01
+value = 1.0
+
+[node name="BrightnessLabel" type="Label" parent="Body/SimTab/Control"]
+layout_mode = 0
+offset_left = 1560.0
+offset_top = 642.0
+offset_right = 1638.0
+offset_bottom = 664.0
+theme = ExtResource("2_7165f")
+theme_override_font_sizes/font_size = 13
+text = "Bright: +0.00"
+
+[node name="BrightnessSlider" type="HSlider" parent="Body/SimTab/Control"]
+layout_mode = 0
+offset_left = 1638.0
+offset_top = 642.0
+offset_right = 1688.0
+offset_bottom = 664.0
+tooltip_text = "CCD image brightness"
+focus_mode = 0
+theme = ExtResource("2_7165f")
+min_value = -0.5
+max_value = 0.5
+step = 0.01
+
+[node name="ContrastLabel" type="Label" parent="Body/SimTab/Control"]
+layout_mode = 0
+offset_left = 1700.0
+offset_top = 642.0
+offset_right = 1778.0
+offset_bottom = 664.0
+theme = ExtResource("2_7165f")
+theme_override_font_sizes/font_size = 13
+text = "Contrast: 1.00"
+
+[node name="ContrastSlider" type="HSlider" parent="Body/SimTab/Control"]
+layout_mode = 0
+offset_left = 1778.0
+offset_top = 642.0
+offset_right = 1840.0
+offset_bottom = 664.0
+tooltip_text = "CCD image contrast"
+focus_mode = 0
+theme = ExtResource("2_7165f")
+min_value = 0.25
+max_value = 3.0
+step = 0.05
 value = 1.0
 
 [node name="FrequencyLabel" type="Label" parent="Body/SimTab/Control"]
@@ -4467,6 +4527,7 @@ text = "−"
 [connection signal="tab_changed" from="Body/ModelPanel/Navbar" to="Body" method="_on_navbar_tab_changed"]
 [connection signal="pressed" from="Body/TabButtons/ToggleModelGridBtn" to="Body" method="_on_toggle_model_grid_btn_pressed"]
 [connection signal="toggled" from="Body/TabButtons/OverlayColorButton" to="Body" method="_on_overlay_color_toggled"]
+[connection signal="toggled" from="Body/TabButtons/ToggleDirectionsBtn" to="Body" method="_on_toggle_directions_btn_toggled"]
 [connection signal="pressed" from="Body/TabButtons/ToggleNucleusGridBtn" to="Body" method="_on_toggle_nucleus_grid_btn_pressed"]
 [connection signal="pressed" from="Body/TabButtons/ToggleSunBtn" to="Body" method="_on_toggle_sun_btn_pressed"]
 [connection signal="pressed" from="Body/TabButtons/ToggleYBtn" to="Body" method="_on_toggle_y_btn_pressed"]

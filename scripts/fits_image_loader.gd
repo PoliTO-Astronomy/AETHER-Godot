@@ -146,8 +146,8 @@ static func _decode_image_hdu(file: FileAccess, header: Dictionary, data_offset:
 		if not _is_missing_value(raw, bitpix, has_blank, blank_value):
 			var physical_value := float(raw) * bscale + bzero
 			intensity = clampf((physical_value - display_min) / (display_max - display_min), 0.0, 1.0)
-			# A square-root stretch preserves bright structure and reveals faint coma detail.
-			intensity = sqrt(intensity)
+			# A moderate asinh stretch reveals the coma without washing out the background.
+			intensity = _asinh_stretch(intensity, 8.0)
 		@warning_ignore("integer_division")
 		var source_y: int = source_index / width
 		var source_x := source_index % width
@@ -170,6 +170,12 @@ static func _decode_image_hdu(file: FileAccess, header: Dictionary, data_offset:
 	}
 	result.merge(_extract_pixel_scale_arcsec(header))
 	return result
+
+static func _asinh_stretch(value: float, strength: float) -> float:
+	var scaled := maxf(value, 0.0) * strength
+	var numerator := log(scaled + sqrt(scaled * scaled + 1.0))
+	var denominator := log(strength + sqrt(strength * strength + 1.0))
+	return numerator / denominator if denominator > 0.0 else value
 
 static func _extract_pixel_scale_arcsec(header: Dictionary) -> Dictionary:
 	# These commonly used keywords already express angular size per pixel in arcseconds.

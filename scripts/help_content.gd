@@ -111,7 +111,7 @@ Lo switch CCD mostra o nasconde l'immagine, sostituendola con il fondo nero senz
 
 [font_size=19][color=#B7C7CF]Trasparenza[/color][/font_size]
 
-Il cursore [b]Model[/b] varia l'opacità del modello numerico da 0%, modello invisibile, a 100%, modello completamente visibile. Il cursore [b]Image[/b] regola separatamente l'opacità dell'immagine telescopica per facilitare il confronto visuale.""",
+Il cursore [b]Model[/b] varia l'opacità del modello numerico da 0%, modello invisibile, a 100%, modello completamente visibile. Il cursore [b]Image[/b] regola separatamente l'opacità dell'immagine telescopica. [b]Bright[/b] e [b]Contrast[/b] permettono di recuperare i dettagli delle immagini FITS senza modificare i dati scientifici originali.""",
 
 """[font_size=26][color=#45B8CF]Simulation[/color][/font_size]
 
@@ -121,7 +121,7 @@ Il cursore [b]Model[/b] varia l'opacità del modello numerico da 0%, modello inv
 
 [b]Save Image[/b] apre la finestra in cui scegliere cartella, nome del file e contenuto dell'esportazione. Il risultato può essere salvato su fondo nero oppure con trasparenza, così da sovrapporlo a immagini telescopiche anche in altri programmi, per esempio PowerPoint.
 
-Le opzioni di salvataggio consentono inoltre di includere l'immagine CCD visibile e l'anteprima del nucleo.
+Le opzioni di salvataggio consentono inoltre di includere l'immagine CCD visibile e l'indicatore direzionale N/S/V. Il pulsante [b]NSV[/b] sotto la finestra principale mostra o nasconde l'indicatore: le tre frecce hanno la stessa origine e rappresentano Nord, direzione del Sole e vettore velocità.
 
 [color=#E7B64A][b]FUNZIONE PREVISTA[/b][/color] [b]Save Animation[/b] permetterà di esportare l'animazione in GIF o MPEG e di scegliere la velocità di riproduzione.""",
 
@@ -273,7 +273,7 @@ The CCD switch shows or hides the image, replacing it with a black background wi
 
 [font_size=19][color=#B7C7CF]Transparency[/color][/font_size]
 
-The [b]Model[/b] slider changes numerical model opacity from 0%, invisible, to 100%, fully visible. The [b]Image[/b] slider separately controls telescopic image opacity for visual comparison.""",
+The [b]Model[/b] slider changes numerical model opacity from 0%, invisible, to 100%, fully visible. The [b]Image[/b] slider separately controls telescopic image opacity. [b]Bright[/b] and [b]Contrast[/b] recover FITS image detail without changing the original scientific data.""",
 
 """[font_size=26][color=#45B8CF]Simulation[/color][/font_size]
 
@@ -283,7 +283,7 @@ The [b]Model[/b] slider changes numerical model opacity from 0%, invisible, to 1
 
 [b]Save Image[/b] opens a window for choosing the folder, file name and export content. The result can be saved on a black background or with transparency, allowing it to be overlaid on telescopic images in other software such as PowerPoint.
 
-Save options can also include the visible CCD image and nucleus preview.
+Save options can also include the visible CCD image and N/S/V direction indicator. The [b]NSV[/b] button below the main viewport shows or hides the indicator; its three arrows share one origin and represent North, Sun direction and velocity vector.
 
 [color=#E7B64A][b]PLANNED FEATURE[/b][/color] [b]Save Animation[/b] will export an animation as GIF or MPEG and allow the playback speed to be selected.""",
 

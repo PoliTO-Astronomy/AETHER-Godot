@@ -338,7 +338,7 @@ func _nucleus_model_section_layout() -> Array[Control]: return _with_header($Vie
 func _date_section_body() -> Array[Control]: return [$Body/CometTab/Control/SwitchDate/CometPanel, $Body/CometTab/Control/SwitchDate/PrevDateFullBtn, $Body/CometTab/Control/SwitchDate/PrevDateBtn, $Body/CometTab/Control/SwitchDate/NextDateBtn, $Body/CometTab/Control/SwitchDate/NextDateFullBtn, $Body/CometTab/Control/ChangeDateInfoBtn]
 func _date_section_layout() -> Array[Control]: return [$Body/CometTab/Control/SwitchDate, $Body/CometTab/Control/ChangeDateInfoBtn]
 
-func _ccd_section_body() -> Array[Control]: return [$Body/SimTab/Control/CCDImagePanel, $Body/SimTab/Control/ToggleTransparency, $Body/SimTab/Control/ModelTransparencyLabel, $Body/SimTab/Control/TransparencySlider, $Body/SimTab/Control/ImageOpacityLabel, $Body/SimTab/Control/ImageOpacitySlider, $Body/SimTab/Control/CCDImageInfoBtn, $Body/ScaleTab/Control]
+func _ccd_section_body() -> Array[Control]: return [$Body/SimTab/Control/CCDImagePanel, $Body/SimTab/Control/ToggleTransparency, $Body/SimTab/Control/ModelTransparencyLabel, $Body/SimTab/Control/TransparencySlider, $Body/SimTab/Control/ImageOpacityLabel, $Body/SimTab/Control/ImageOpacitySlider, $Body/SimTab/Control/BrightnessLabel, $Body/SimTab/Control/BrightnessSlider, $Body/SimTab/Control/ContrastLabel, $Body/SimTab/Control/ContrastSlider, $Body/SimTab/Control/CCDImageInfoBtn, $Body/ScaleTab/Control]
 func _ccd_section_layout() -> Array[Control]: return _with_header($Body/SimTab/Control/CCDImgLabel, _ccd_section_body())
 
 func _run_section_body() -> Array[Control]: return [$Body/TabButtons/RunModelBtn, $Body/TabButtons/AnimationSlider, $Body/TabButtons/SaveSimBtn, $Body/TabButtons/RunModelInfoBtn]

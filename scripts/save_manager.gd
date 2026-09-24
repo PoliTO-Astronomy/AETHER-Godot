@@ -21,6 +21,8 @@ func load(filename: StringName) -> void:
 ## On first use, creates "Project Aether" inside the operating system Documents folder.
 func prepare_file_dialog(dialog: FileDialog, suggested_file: String = "") -> void:
 	var directory := get_default_directory()
+	dialog.min_size = Vector2i(900, 680)
+	dialog.size = Vector2i(900, 680)
 	dialog.current_dir = directory
 	dialog.current_file = suggested_file
 

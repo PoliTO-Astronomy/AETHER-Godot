@@ -16,8 +16,8 @@ extends CanvasLayer
 
 const MIN_VP_SIDE := 256
 var alpha_check: CheckBox
-var overlay_check: CheckBox
 var image_check: CheckBox
+var direction_check: CheckBox
 var direction_overlay: ScientificDirectionOverlay
 
 func _on_overlay_color_toggled(black: bool) -> void:
@@ -35,11 +35,12 @@ func _ready() -> void:
 	direction_overlay = ScientificDirectionOverlay.new()
 	direction_overlay.name = "ScientificDirectionOverlay"
 	direction_overlay.position = Vector2.ZERO
-	direction_overlay.size = Vector2(230, 128)
+	direction_overlay.size = Vector2(130, 118)
 	direction_overlay.z_index = 4
 	direction_overlay.visible = false
-	aspect_ratio_container.add_child(direction_overlay)
+	coordinate_grid.add_child(direction_overlay)
 	aspect_ratio_container.resized.connect(_sync_center)
+	call_deferred("_sync_center")
 	await get_tree().process_frame
 
 	# ✅ Disabilita stretch prima
@@ -59,17 +60,16 @@ func _ready() -> void:
 	alpha_check.text = "Save with transparent background (alpha)"
 	alpha_check.button_pressed = true  # default consigliato
 	
-	overlay_check = CheckBox.new()
-	overlay_check.text = "Save with nucleus preview overlay"
-	overlay_check.button_pressed = true  # default consigliato
-
 	# 👇 QUESTA È LA RIGA CHIAVE
 	file_explorer.get_vbox().add_child(alpha_check)
-	file_explorer.get_vbox().add_child(overlay_check)
 	image_check = CheckBox.new()
 	image_check.text = "Include visible CCD image"
 	image_check.button_pressed = true
 	file_explorer.get_vbox().add_child(image_check)
+	direction_check = CheckBox.new()
+	direction_check.text = "Include N/S/V direction indicator"
+	direction_check.button_pressed = false
+	file_explorer.get_vbox().add_child(direction_check)
 	_set_image_export_options_visible(false)
 
 	if not file_explorer.file_selected.is_connected(_on_file_explorer_file_selected):
@@ -77,7 +77,8 @@ func _ready() -> void:
 
 
 func _sync_center() -> void:
-	sub_viewport_container.size = Vector2i(aspect_ratio_container.size)
+	if direction_overlay != null:
+		direction_overlay.position = aspect_ratio_container.position + Vector2(maxf(0.0, aspect_ratio_container.size.x - direction_overlay.size.x - 12.0), 10.0)
 
 	var side := int(min(sub_viewport_container.size.x, sub_viewport_container.size.y))
 	side = max(side, MIN_VP_SIDE)
@@ -284,7 +285,7 @@ func _on_save_nucleus_btn_pressed() -> void:
 
 
 func _set_image_export_options_visible(show_options: bool) -> void:
-	for option in [alpha_check, overlay_check, image_check]:
+	for option in [alpha_check, image_check, direction_check]:
 		if option != null:
 			option.visible = show_options
 
@@ -302,9 +303,7 @@ func _on_file_explorer_file_selected(path: String) -> void:
 		#	print("Screenshot saved to: ", path, " alpha=", want_alpha)
 		if file_explorer.get_meta("is_screenshot", false):
 			var want_alpha := alpha_check != null and alpha_check.button_pressed
-			var want_overlay := overlay_check != null and overlay_check.button_pressed
-
-			var img := await screenshot_composited_with_overlays(rot_camera_viewport, want_alpha, want_overlay, image_check.button_pressed)
+			var img := await screenshot_composited_with_overlays(rot_camera_viewport, want_alpha, image_check.button_pressed)
 
 			img.resize(1200, 1200)
 			img.convert(Image.FORMAT_RGBA8)
@@ -550,6 +549,12 @@ func _on_toggle_scale_btn_pressed() -> void:
 	var viewport_scale := get_node("/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer/LabelControl/Scale") as CanvasItem
 	Util.current_fov_label.visible = not Util.current_fov_label.visible
 	viewport_scale.visible = not viewport_scale.visible
+
+func _on_toggle_directions_btn_toggled(enabled: bool) -> void:
+	if direction_overlay != null:
+		direction_overlay.visible = enabled
+	if direction_check != null:
+		direction_check.set_pressed_no_signal(enabled)
 	
 func update_save_load_buttons() -> void:
 	var has_data := Util.has_jpl_data()
@@ -561,7 +566,11 @@ func update_save_load_buttons() -> void:
 		disable_btn("SaveBtn")
 		disable_btn("LoadBtn")
 
-func screenshot_composited_with_overlays(vp: SubViewport, want_alpha: bool, include_nucleus_preview: bool, include_image: bool = true) -> Image:
+func screenshot_composited_with_overlays(vp: SubViewport, want_alpha: bool, include_image: bool = true) -> Image:
+	var fullscreen_control := get_node_or_null("/root/Hud/FullscreenViewerControls/FullscreenViewportButton") as CanvasItem
+	var fullscreen_was_visible := fullscreen_control != null and fullscreen_control.visible
+	if fullscreen_control != null:
+		fullscreen_control.visible = false
 	var base: Image = await screenshot_subviewport(vp, true)
 	base.convert(Image.FORMAT_RGBA8)
 	_apply_image_opacity(base, sub_viewport_container.modulate.a)
@@ -576,6 +585,7 @@ func screenshot_composited_with_overlays(vp: SubViewport, want_alpha: bool, incl
 	if include_image and image_control.visible and image_control.texture != null:
 		var ccd := image_control.texture.get_image()
 		ccd.convert(Image.FORMAT_RGBA8)
+		_apply_brightness_contrast(ccd)
 		var factor := minf(float(base.get_width()) / ccd.get_width(), float(base.get_height()) / ccd.get_height())
 		ccd.resize(maxi(1, roundi(ccd.get_width() * factor)), maxi(1, roundi(ccd.get_height() * factor)), Image.INTERPOLATE_BILINEAR)
 		_apply_image_opacity(ccd, image_control.modulate.a)
@@ -583,27 +593,29 @@ func screenshot_composited_with_overlays(vp: SubViewport, want_alpha: bool, incl
 		out.blend_rect(ccd, Rect2i(Vector2i.ZERO, ccd.get_size()), offset)
 	out.blend_rect(base, Rect2i(Vector2i.ZERO, base.get_size()), Vector2i.ZERO)
 	out.blend_rect(overlays, Rect2i(0, 0, overlays.get_width(), overlays.get_height()), Vector2i.ZERO)
-	var direction_legend: Image = await capture_direction_overlay()
-	var direction_margin := maxi(12, roundi(out.get_width() * 0.025))
-	var direction_position := Vector2i(
-		out.get_width() - direction_legend.get_width() - direction_margin,
-		maxi(35, roundi(out.get_height() * 0.07))
-	)
-	out.blend_rect(
-		direction_legend,
-		Rect2i(Vector2i.ZERO, direction_legend.get_size()),
-		direction_position
-	)
+	if direction_check != null and direction_check.button_pressed:
+		var direction_legend: Image = await capture_direction_overlay()
+		var direction_margin := maxi(12, roundi(out.get_width() * 0.025))
+		var direction_y := maxi(35, roundi(out.get_height() * 0.07))
+		var direction_position := Vector2i(
+			out.get_width() - direction_legend.get_width() - direction_margin,
+			direction_y
+		)
+		out.blend_rect(
+			direction_legend,
+			Rect2i(Vector2i.ZERO, direction_legend.get_size()),
+			direction_position
+		)
 
-	if include_nucleus_preview:
-		await _draw_nucleus_preview_on_screenshot(out)
+	if fullscreen_control != null:
+		fullscreen_control.visible = fullscreen_was_visible
 
 	return out
 
 func capture_direction_overlay() -> Image:
 	var export_viewport := SubViewport.new()
 	export_viewport.name = "DirectionOverlayExportViewport"
-	export_viewport.size = Vector2i(250, 128)
+	export_viewport.size = Vector2i(130, 118)
 	export_viewport.transparent_bg = true
 	export_viewport.disable_3d = true
 	export_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
@@ -628,6 +640,19 @@ func _apply_image_opacity(img: Image, opacity: float) -> void:
 		for x in range(img.get_width()):
 			var pixel := img.get_pixel(x, y)
 			pixel.a *= opacity
+			img.set_pixel(x, y, pixel)
+
+func _apply_brightness_contrast(img: Image) -> void:
+	var brightness := float($"/root/Hud/Body/SimTab/Control/BrightnessSlider".value)
+	var contrast := float($"/root/Hud/Body/SimTab/Control/ContrastSlider".value)
+	if is_zero_approx(brightness) and is_equal_approx(contrast, 1.0):
+		return
+	for y in range(img.get_height()):
+		for x in range(img.get_width()):
+			var pixel := img.get_pixel(x, y)
+			pixel.r = clampf((pixel.r - 0.5) * contrast + 0.5 + brightness, 0.0, 1.0)
+			pixel.g = clampf((pixel.g - 0.5) * contrast + 0.5 + brightness, 0.0, 1.0)
+			pixel.b = clampf((pixel.b - 0.5) * contrast + 0.5 + brightness, 0.0, 1.0)
 			img.set_pixel(x, y, pixel)
 
 
@@ -799,81 +824,3 @@ func _draw_filled_rect(img: Image, rect: Rect2i, color: Color) -> void:
 			if x >= 0 and y >= 0 and x < img.get_width() and y < img.get_height():
 				var old := img.get_pixel(x, y)
 				img.set_pixel(x, y, old.lerp(color, color.a))
-
-func _draw_nucleus_preview_on_screenshot(img: Image) -> void:
-	var preview: Image = await screenshot_subviewport(minicamera_viewport, true)
-
-	if preview == null or preview.is_empty():
-		return
-
-	preview.convert(Image.FORMAT_RGBA8)
-
-	# Elimina lo sfondo nero del mini viewport.
-	_make_black_transparent(preview, 0.06)
-
-	# Ritaglia il contenuto utile: nucleo + frecce.
-	preview = _crop_visible_pixels(preview, 8)
-
-	if preview == null or preview.is_empty():
-		return
-
-	var target_w: int = int(img.get_width() * 0.13)
-	var target_h: int = int(float(preview.get_height()) * float(target_w) / float(preview.get_width()))
-
-	preview.resize(target_w, target_h, Image.INTERPOLATE_LANCZOS)
-
-	var margin: int = int(img.get_width() * 0.025)
-	var pos: Vector2i = Vector2i(
-		img.get_width() - target_w - margin,
-		margin
-	)
-
-	img.blend_rect(
-		preview,
-		Rect2i(0, 0, preview.get_width(), preview.get_height()),
-		pos
-	)
-
-func _make_black_transparent(img: Image, threshold: float) -> void:
-	img.convert(Image.FORMAT_RGBA8)
-
-	for y in range(img.get_height()):
-		for x in range(img.get_width()):
-			var c: Color = img.get_pixel(x, y)
-
-			if c.r <= threshold and c.g <= threshold and c.b <= threshold:
-				img.set_pixel(x, y, Color(c.r, c.g, c.b, 0.0))
-
-
-func _crop_visible_pixels(img: Image, padding: int) -> Image:
-	var min_x: int = img.get_width()
-	var min_y: int = img.get_height()
-	var max_x: int = -1
-	var max_y: int = -1
-
-	for y in range(img.get_height()):
-		for x in range(img.get_width()):
-			var c: Color = img.get_pixel(x, y)
-
-			if c.a > 0.05:
-				min_x = min(min_x, x)
-				min_y = min(min_y, y)
-				max_x = max(max_x, x)
-				max_y = max(max_y, y)
-
-	if max_x < 0 or max_y < 0:
-		return img
-
-	min_x = max(0, min_x - padding)
-	min_y = max(0, min_y - padding)
-	max_x = min(img.get_width() - 1, max_x + padding)
-	max_y = min(img.get_height() - 1, max_y + padding)
-
-	var rect := Rect2i(
-		min_x,
-		min_y,
-		max_x - min_x + 1,
-		max_y - min_y + 1
-	)
-
-	return img.get_region(rect)

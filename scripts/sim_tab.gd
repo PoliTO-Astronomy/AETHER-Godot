@@ -10,6 +10,11 @@ const FITS_IMAGE_LOADER = preload("res://scripts/fits_image_loader.gd")
 @onready var sub_viewport_container: SubViewportContainer = $"/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer/SubViewportContainer"
 var image_opacity_slider: HSlider
 var image_opacity_label: Label
+@onready var brightness_slider: HSlider = $Control/BrightnessSlider
+@onready var brightness_label: Label = $Control/BrightnessLabel
+@onready var contrast_slider: HSlider = $Control/ContrastSlider
+@onready var contrast_label: Label = $Control/ContrastLabel
+var display_adjustment_material: ShaderMaterial
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	# $Control/FrequencyEdit.set_value(1)
@@ -18,6 +23,9 @@ func _ready() -> void:
 	image_opacity_slider = $Control/ImageOpacitySlider
 	image_opacity_label = $Control/ImageOpacityLabel
 	image_opacity_slider.value_changed.connect(_on_image_opacity_changed)
+	brightness_slider.value_changed.connect(_on_display_adjustment_changed)
+	contrast_slider.value_changed.connect(_on_display_adjustment_changed)
+	_setup_display_adjustment_material()
 	_update_opacity_labels()
 	$Control/CCDImagePanel.resized.connect(_layout_opacity_controls)
 	call_deferred("_layout_opacity_controls")
@@ -29,12 +37,18 @@ func _layout_opacity_controls() -> void:
 	var width := (panel.size.x - 44.0) / 2.0
 	var origin := panel.position + Vector2(16, 32)
 	var model_label: Label = $Control/ModelTransparencyLabel
-	for label in [model_label, image_opacity_label]:
+	for label in [model_label, image_opacity_label, brightness_label, contrast_label]:
 		label.add_theme_font_size_override("font_size", 14)
-	Hud._place_control(model_label, Rect2(origin, Vector2(width, 22)))
-	Hud._place_control(transparency_slider, Rect2(origin + Vector2(0, 22), Vector2(width, 22)))
-	Hud._place_control(image_opacity_label, Rect2(origin + Vector2(width + 12, 0), Vector2(width, 22)))
-	Hud._place_control(image_opacity_slider, Rect2(origin + Vector2(width + 12, 22), Vector2(width, 22)))
+	var label_width := 78.0
+	var slider_width := maxf(42.0, width - label_width)
+	Hud._place_control(model_label, Rect2(origin, Vector2(label_width, 22)))
+	Hud._place_control(transparency_slider, Rect2(origin + Vector2(label_width, 0), Vector2(slider_width, 22)))
+	Hud._place_control(image_opacity_label, Rect2(origin + Vector2(width + 12, 0), Vector2(label_width, 22)))
+	Hud._place_control(image_opacity_slider, Rect2(origin + Vector2(width + 12 + label_width, 0), Vector2(slider_width, 22)))
+	Hud._place_control(brightness_label, Rect2(origin + Vector2(0, 24), Vector2(label_width, 22)))
+	Hud._place_control(brightness_slider, Rect2(origin + Vector2(label_width, 24), Vector2(slider_width, 22)))
+	Hud._place_control(contrast_label, Rect2(origin + Vector2(width + 12, 24), Vector2(label_width, 22)))
+	Hud._place_control(contrast_slider, Rect2(origin + Vector2(width + 12 + label_width, 24), Vector2(slider_width, 22)))
 	Hud._place_control($Control/CCDImageInfoBtn, Rect2(panel.position + Vector2(112, 6), Vector2(20, 20)))
 	Hud._place_control($Control/CCDImgLabel, Rect2(panel.position + Vector2(14, 5), Vector2(96, 24)))
 	Hud._place_control($Control/ToggleTransparency,
@@ -44,9 +58,32 @@ func _layout_opacity_controls() -> void:
 func _update_opacity_labels() -> void:
 	$Control/ModelTransparencyLabel.text = "Model: %d%%" % roundi(transparency_slider.value * 100)
 	image_opacity_label.text = "Image: %d%%" % roundi(image_opacity_slider.value * 100)
+	brightness_label.text = "Bright: %+.2f" % brightness_slider.value
+	contrast_label.text = "Contrast: %.2f" % contrast_slider.value
 
 func _on_image_opacity_changed(value: float) -> void:
 	overlay_img.modulate.a = value
+	_update_opacity_labels()
+
+func _setup_display_adjustment_material() -> void:
+	var shader := Shader.new()
+	shader.code = """shader_type canvas_item;
+uniform float brightness = 0.0;
+uniform float contrast = 1.0;
+void fragment() {
+	vec4 source = texture(TEXTURE, UV);
+	vec3 adjusted = clamp((source.rgb - vec3(0.5)) * contrast + vec3(0.5 + brightness), vec3(0.0), vec3(1.0));
+	COLOR = vec4(adjusted, source.a) * COLOR;
+}"""
+	display_adjustment_material = ShaderMaterial.new()
+	display_adjustment_material.shader = shader
+	overlay_img.material = display_adjustment_material
+	_on_display_adjustment_changed(0.0)
+
+func _on_display_adjustment_changed(_value: float) -> void:
+	if display_adjustment_material != null:
+		display_adjustment_material.set_shader_parameter("brightness", brightness_slider.value)
+		display_adjustment_material.set_shader_parameter("contrast", contrast_slider.value)
 	_update_opacity_labels()
 
 ## Called by Navbar._on_file_explorer_file_selected()
@@ -54,6 +91,8 @@ func _on_image_opacity_changed(value: float) -> void:
 func save_data() -> void:
 	SaveManager.config.set_value("display", "image_opacity", image_opacity_slider.value)
 	SaveManager.config.set_value("display", "model_opacity", transparency_slider.value)
+	SaveManager.config.set_value("display", "image_brightness", brightness_slider.value)
+	SaveManager.config.set_value("display", "image_contrast", contrast_slider.value)
 	SaveManager.config.set_value("simulation", "frequency", $Control/FrequencyEdit/SanitizedEdit.text)
 	SaveManager.config.set_value("simulation", "num_rotations", $"../CometTab/Control/NumRotationEdit".text)
 	SaveManager.config.set_value("simulation", "jet_rate", $"../JetsTab/Control/JetRateEdit".text)
@@ -66,6 +105,8 @@ func save_data() -> void:
 func load_data() -> void:
 	image_opacity_slider.value = float(SaveManager.config.get_value("display", "image_opacity", 1.0))
 	transparency_slider.value = float(SaveManager.config.get_value("display", "model_opacity", 1.0))
+	brightness_slider.value = float(SaveManager.config.get_value("display", "image_brightness", 0.0))
+	contrast_slider.value = float(SaveManager.config.get_value("display", "image_contrast", 1.0))
 	$Control/FrequencyEdit.set_value(float(SaveManager.config.get_value("simulation", "frequency", 0)))
 	$"../CometTab/Control/NumRotationEdit".set_value(float(SaveManager.config.get_value("simulation", "num_rotations", 0)))
 	var saved_integration_step := float(SaveManager.config.get_value(
