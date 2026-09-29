@@ -819,8 +819,8 @@ valid_zero = true
 
 [node name="Slider" parent="Body/CometTab/Control/EditCometIncl" index="0"]
 visible = false
-offset_left = 32475.9
-offset_right = 32635.9
+offset_left = 33129.3
+offset_right = 33289.3
 scale = Vector2(-1, 1)
 theme = ExtResource("2_7165f")
 min_value = -90.0
@@ -2042,23 +2042,23 @@ metadata/_edit_use_anchors_ = true
 [node name="ModelTransparencyLabel" type="Label" parent="Body/SimTab/Control"]
 layout_mode = 1
 anchors_preset = -1
-offset_left = 1568.0
-offset_top = 615.0
-offset_right = 1702.0
-offset_bottom = 628.0
+offset_left = 1576.0
+offset_top = 611.0
+offset_right = 1654.0
+offset_bottom = 644.0
 theme = ExtResource("2_7165f")
 theme_override_font_sizes/font_size = 11
 text = "Model 100%"
-horizontal_alignment = 1
+vertical_alignment = 1
 metadata/_edit_use_anchors_ = true
 
 [node name="TransparencySlider" type="HSlider" parent="Body/SimTab/Control"]
 layout_mode = 1
 anchors_preset = -1
-offset_left = 1568.0
-offset_top = 627.0
-offset_right = 1702.0
-offset_bottom = 641.0
+offset_left = 1654.0
+offset_top = 619.0
+offset_right = 1718.0
+offset_bottom = 635.0
 focus_next = NodePath("../ImageOpacitySlider")
 focus_previous = NodePath("../../../CometTab/Control/EditAlbedo")
 theme = ExtResource("2_7165f")
@@ -2070,21 +2070,21 @@ metadata/_edit_use_anchors_ = true
 
 [node name="ImageOpacityLabel" type="Label" parent="Body/SimTab/Control"]
 layout_mode = 0
-offset_left = 1714.0
-offset_top = 615.0
-offset_right = 1848.0
-offset_bottom = 628.0
+offset_left = 1730.0
+offset_top = 611.0
+offset_right = 1808.0
+offset_bottom = 644.0
 theme = ExtResource("2_7165f")
 theme_override_font_sizes/font_size = 11
 text = "Image 100%"
-horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="ImageOpacitySlider" type="HSlider" parent="Body/SimTab/Control"]
 layout_mode = 0
-offset_left = 1714.0
-offset_top = 627.0
-offset_right = 1848.0
-offset_bottom = 641.0
+offset_left = 1808.0
+offset_top = 619.0
+offset_right = 1872.0
+offset_bottom = 635.0
 tooltip_text = "CCD image opacity: 0% hidden, 100% opaque"
 focus_next = NodePath("../../../JetsTab/Control/JetRateEdit")
 focus_previous = NodePath("../TransparencySlider")
@@ -2095,45 +2095,46 @@ value = 1.0
 
 [node name="BrightnessLabel" type="Label" parent="Body/SimTab/Control"]
 layout_mode = 0
-offset_left = 1568.0
-offset_top = 639.0
-offset_right = 1702.0
-offset_bottom = 652.0
+offset_left = 1576.0
+offset_top = 644.0
+offset_right = 1654.0
+offset_bottom = 677.0
 theme = ExtResource("2_7165f")
 theme_override_font_sizes/font_size = 11
 text = "Bright +0.00"
-horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="BrightnessSlider" type="HSlider" parent="Body/SimTab/Control"]
 layout_mode = 0
-offset_left = 1568.0
-offset_top = 651.0
-offset_right = 1702.0
-offset_bottom = 665.0
+offset_left = 1654.0
+offset_top = 652.0
+offset_right = 1718.0
+offset_bottom = 668.0
 tooltip_text = "CCD image brightness"
 focus_mode = 0
 theme = ExtResource("2_7165f")
 min_value = -0.5
 max_value = 0.5
 step = 0.01
+value = 0.5
 
 [node name="ContrastLabel" type="Label" parent="Body/SimTab/Control"]
 layout_mode = 0
-offset_left = 1714.0
-offset_top = 639.0
-offset_right = 1848.0
-offset_bottom = 652.0
+offset_left = 1730.0
+offset_top = 644.0
+offset_right = 1808.0
+offset_bottom = 677.0
 theme = ExtResource("2_7165f")
 theme_override_font_sizes/font_size = 11
 text = "Contr. 1.00"
-horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="ContrastSlider" type="HSlider" parent="Body/SimTab/Control"]
 layout_mode = 0
-offset_left = 1714.0
-offset_top = 651.0
-offset_right = 1848.0
-offset_bottom = 665.0
+offset_left = 1808.0
+offset_top = 652.0
+offset_right = 1872.0
+offset_bottom = 668.0
 tooltip_text = "CCD image contrast"
 focus_mode = 0
 theme = ExtResource("2_7165f")

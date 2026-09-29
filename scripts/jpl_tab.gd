@@ -76,6 +76,15 @@ func _setup_settings_titles() -> void:
 	results_title = $Control/ResultsTitle
 	empty_results_overlay = $Control/EmptyResultsOverlay
 	empty_results_label = $Control/EmptyResultsOverlay/EmptyResultsLabel
+	empty_results_overlay.resized.connect(_layout_loading_label)
+	call_deferred("_layout_loading_label")
+
+func _layout_loading_label() -> void:
+	if empty_results_overlay == null or loading_label == null:
+		return
+	Hud._place_control(loading_label, empty_results_overlay.get_rect())
+	loading_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	loading_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
 func _setup_psamv_option() -> void:
 	if $Control/TableSettings.has_node("cbPsAMV"):
@@ -159,7 +168,7 @@ func _layout_settings_screen() -> void:
 	Hud._place_control(empty_results_overlay, Rect2(results_x + 22, top + 50, results_width - 44, results_height - 116))
 	empty_results_overlay.visible = ephem_table.get_child_count() == 0
 	Hud._place_control($Control/ExportCSVBtn, Rect2(results_x + results_width - 208, top + results_height - 52, 186, 36))
-	Hud._place_control($Control/LoadingLabel, Rect2(results_x + results_width * 0.35, top + results_height * 0.45, results_width * 0.3, 42))
+	_layout_loading_label()
 	$Control/LoadingLabel.scale = Vector2.ONE
 
 func _layout_search_row(label: Label, info: TextureButton, y: float, x: float, width: float) -> void:
