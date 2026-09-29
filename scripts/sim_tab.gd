@@ -34,21 +34,18 @@ func _layout_opacity_controls() -> void:
 	if not Hud.automatic_layout:
 		return
 	var panel: Control = $Control/CCDImagePanel
-	var width := (panel.size.x - 44.0) / 2.0
-	var origin := panel.position + Vector2(16, 32)
+	var origin := panel.position + Vector2(14, 30)
 	var model_label: Label = $Control/ModelTransparencyLabel
 	for label in [model_label, image_opacity_label, brightness_label, contrast_label]:
-		label.add_theme_font_size_override("font_size", 14)
-	var label_width := 78.0
-	var slider_width := maxf(42.0, width - label_width)
-	Hud._place_control(model_label, Rect2(origin, Vector2(label_width, 22)))
-	Hud._place_control(transparency_slider, Rect2(origin + Vector2(label_width, 0), Vector2(slider_width, 22)))
-	Hud._place_control(image_opacity_label, Rect2(origin + Vector2(width + 12, 0), Vector2(label_width, 22)))
-	Hud._place_control(image_opacity_slider, Rect2(origin + Vector2(width + 12 + label_width, 0), Vector2(slider_width, 22)))
-	Hud._place_control(brightness_label, Rect2(origin + Vector2(0, 24), Vector2(label_width, 22)))
-	Hud._place_control(brightness_slider, Rect2(origin + Vector2(label_width, 24), Vector2(slider_width, 22)))
-	Hud._place_control(contrast_label, Rect2(origin + Vector2(width + 12, 24), Vector2(label_width, 22)))
-	Hud._place_control(contrast_slider, Rect2(origin + Vector2(width + 12 + label_width, 24), Vector2(slider_width, 22)))
+		label.add_theme_font_size_override("font_size", 11)
+	var gap := 6.0
+	var column_width := (panel.size.x - 28.0 - gap * 3.0) / 4.0
+	var labels: Array[Label] = [model_label, image_opacity_label, brightness_label, contrast_label]
+	var sliders: Array[HSlider] = [transparency_slider, image_opacity_slider, brightness_slider, contrast_slider]
+	for index in range(4):
+		var column_origin := origin + Vector2(index * (column_width + gap), 0)
+		Hud._place_control(labels[index], Rect2(column_origin, Vector2(column_width, 17)))
+		Hud._place_control(sliders[index], Rect2(column_origin + Vector2(0, 16), Vector2(column_width, 19)))
 	Hud._place_control($Control/CCDImageInfoBtn, Rect2(panel.position + Vector2(112, 6), Vector2(20, 20)))
 	Hud._place_control($Control/CCDImgLabel, Rect2(panel.position + Vector2(14, 5), Vector2(96, 24)))
 	Hud._place_control($Control/ToggleTransparency,
@@ -56,10 +53,10 @@ func _layout_opacity_controls() -> void:
 	_update_opacity_labels()
 
 func _update_opacity_labels() -> void:
-	$Control/ModelTransparencyLabel.text = "Model: %d%%" % roundi(transparency_slider.value * 100)
-	image_opacity_label.text = "Image: %d%%" % roundi(image_opacity_slider.value * 100)
-	brightness_label.text = "Bright: %+.2f" % brightness_slider.value
-	contrast_label.text = "Contrast: %.2f" % contrast_slider.value
+	$Control/ModelTransparencyLabel.text = "Model %d%%" % roundi(transparency_slider.value * 100)
+	image_opacity_label.text = "Image %d%%" % roundi(image_opacity_slider.value * 100)
+	brightness_label.text = "Bright %+.2f" % brightness_slider.value
+	contrast_label.text = "Contr. %.2f" % contrast_slider.value
 
 func _on_image_opacity_changed(value: float) -> void:
 	overlay_img.modulate.a = value
@@ -73,7 +70,7 @@ uniform float contrast = 1.0;
 void fragment() {
 	vec4 source = texture(TEXTURE, UV);
 	vec3 adjusted = clamp((source.rgb - vec3(0.5)) * contrast + vec3(0.5 + brightness), vec3(0.0), vec3(1.0));
-	COLOR = vec4(adjusted, source.a) * COLOR;
+	COLOR = vec4(adjusted, source.a * COLOR.a);
 }"""
 	display_adjustment_material = ShaderMaterial.new()
 	display_adjustment_material.shader = shader

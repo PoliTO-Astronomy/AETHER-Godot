@@ -669,6 +669,10 @@ func capture_overlays_with_alpha() -> Image:
 		$"/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer/SubViewportContainer",
 		$"/root/Hud/Viewport/Panel/CoordinateGrid/AspectRatioContainer/OverlayImg",
 	]
+	# The live NSV marker is regenerated at export resolution below. Excluding it
+	# from the screen capture prevents the marker from appearing twice.
+	if direction_overlay != null and is_instance_valid(direction_overlay):
+		excluded_nodes.append(direction_overlay)
 
 	var old_visibilities: Array[bool] = []
 	for node in excluded_nodes:

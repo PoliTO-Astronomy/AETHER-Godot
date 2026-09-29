@@ -143,20 +143,14 @@ func update_ruler() -> void:
 	
 	
 	var zoom_factor := Util.starting_visible_area / Util.visible_area
-	var fov_km_ruler: float = Util.fov_km / zoom_factor
-	var parent := scale_ruler.get_parent() as Control
-	
-	var start_x = scale_ruler.position.x
-	var max_width = scale_ruler.get_parent().size.x - start_x
-		
-	var ruler_length := Util.window_size / 6.0
-	ruler_length = clamp(ruler_length, 1.0, max_width)
-	if scale_ruler:
-		scale_ruler.custom_minimum_size.x = ruler_length
-		# oppure: scale_ruler.size.x = ruler_length_px
-		scale_ruler.size.x = ruler_length
-
-	fov_km_ruler = float(fov_km_ruler) / float(Util.window_size) * ruler_length
+	var fov_km_ruler: float = Util.fov_km / zoom_factor / 6.0
+	# The ruler spans exactly one sixth of the displayed FOV. Anchors make this
+	# responsive and keep the same proportion in the application and exports.
+	scale_ruler.custom_minimum_size.x = 0.0
+	scale_ruler.anchor_left = 0.7888889
+	scale_ruler.anchor_right = scale_ruler.anchor_left + 1.0 / 6.0
+	scale_ruler.offset_left = 0.0
+	scale_ruler.offset_right = 0.0
 	if arcsec_km_toggle:
 		Util.current_fov_label.text = "%s Km" % str(int(round(fov_km_ruler)))
 	else:

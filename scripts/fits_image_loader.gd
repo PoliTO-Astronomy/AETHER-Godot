@@ -146,8 +146,10 @@ static func _decode_image_hdu(file: FileAccess, header: Dictionary, data_offset:
 		if not _is_missing_value(raw, bitpix, has_blank, blank_value):
 			var physical_value := float(raw) * bscale + bzero
 			intensity = clampf((physical_value - display_min) / (display_max - display_min), 0.0, 1.0)
-			# A moderate asinh stretch reveals the coma without washing out the background.
-			intensity = _asinh_stretch(intensity, 8.0)
+			# A gentle gamma stretch keeps the background readable while preserving
+			# details in the coma. It sits between the former bright square-root
+			# rendering and the overly dark asinh rendering.
+			intensity = pow(intensity, 0.65)
 		@warning_ignore("integer_division")
 		var source_y: int = source_index / width
 		var source_x := source_index % width
