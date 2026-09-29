@@ -52,12 +52,22 @@ func _style_calendar() -> void:
 	var tips := ["Previous year", "Previous month", "", "Next month", "Next year"]
 	for i in range(order.size()):
 		header.get_node(order[i]).tooltip_text = tips[i]
-	header.get_node("button_prev_year").hide()
-	header.get_node("button_next_year").hide()
+	var previous_year: Button = header.get_node("button_prev_year")
+	var previous_month: Button = header.get_node("button_prev_month")
+	var next_month: Button = header.get_node("button_next_month")
+	var next_year: Button = header.get_node("button_next_year")
+	previous_year.text = "«"
+	previous_month.text = "‹"
+	next_month.text = "›"
+	next_year.text = "»"
+	for navigation_button in [previous_year, previous_month, next_month, next_year]:
+		navigation_button.custom_minimum_size = Vector2(32, 32)
+		navigation_button.focus_mode = Control.FOCUS_ALL
 	header.get_node("label_month_year").hide()
 	month_picker = OptionButton.new()
 	month_picker.name = "MonthPicker"
 	month_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	month_picker.custom_minimum_size.x = 104
 	month_picker.tooltip_text = "Choose month"
 	for month_name in ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]:
 		month_picker.add_item(month_name)
@@ -66,7 +76,7 @@ func _style_calendar() -> void:
 	month_picker.item_selected.connect(_month_selected)
 	year_edit = LineEdit.new()
 	year_edit.name = "YearEdit"
-	year_edit.custom_minimum_size.x = 76
+	year_edit.custom_minimum_size.x = 68
 	year_edit.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	year_edit.tooltip_text = "Type a year (1–9999), then press Enter or choose a day"
 	year_edit.text_changed.connect(_filter_year)

@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://de6r1r0kvi6q1"]
 
 [node name="popup" type="Popup"]
-size = Vector2i(250, 300)
+size = Vector2i(356, 370)
 visible = true
-min_size = Vector2i(228, 300)
+min_size = Vector2i(356, 370)
 
 [node name="PanelContainer" type="PanelContainer" parent="."]
 anchors_preset = 15
@@ -24,11 +24,11 @@ alignment = 1
 
 [node name="button_prev_month" type="Button" parent="PanelContainer/vbox/hbox_month_year"]
 layout_mode = 2
-text = "<"
+text = "‹"
 
 [node name="button_prev_year" type="Button" parent="PanelContainer/vbox/hbox_month_year"]
 layout_mode = 2
-text = "<<"
+text = "«"
 
 [node name="label_month_year" type="Label" parent="PanelContainer/vbox/hbox_month_year"]
 layout_mode = 2
@@ -38,11 +38,11 @@ vertical_alignment = 1
 
 [node name="button_next_year" type="Button" parent="PanelContainer/vbox/hbox_month_year"]
 layout_mode = 2
-text = ">>"
+text = "»"
 
 [node name="button_next_month" type="Button" parent="PanelContainer/vbox/hbox_month_year"]
 layout_mode = 2
-text = ">"
+text = "›"
 
 [node name="hbox_deadspace" type="HBoxContainer" parent="PanelContainer/vbox"]
 layout_mode = 2
