@@ -846,3 +846,10 @@ func _on_file_explorer_file_selected(path: String) -> void:
 
 func _show_loading_label(bool_value: bool) -> void:
 	loading_label.visible = bool_value
+	# Loading and empty-result messages occupy the same area and represent
+	# mutually exclusive states. Restore the empty state only when the request
+	# has ended and the table still contains no rows.
+	if bool_value:
+		_set_empty_results_visible(false)
+	else:
+		_set_empty_results_visible(ephem_table.get_child_count() == 0)

@@ -34,18 +34,24 @@ func _layout_opacity_controls() -> void:
 	if not Hud.automatic_layout:
 		return
 	var panel: Control = $Control/CCDImagePanel
-	var origin := panel.position + Vector2(14, 30)
+	var left_margin := 30.0
+	var right_margin := 14.0
+	var origin := panel.position + Vector2(left_margin, 24)
 	var model_label: Label = $Control/ModelTransparencyLabel
 	for label in [model_label, image_opacity_label, brightness_label, contrast_label]:
 		label.add_theme_font_size_override("font_size", 11)
-	var gap := 6.0
-	var column_width := (panel.size.x - 28.0 - gap * 3.0) / 4.0
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var column_gap := 12.0
+	var column_width := (panel.size.x - left_margin - right_margin - column_gap) / 2.0
 	var labels: Array[Label] = [model_label, image_opacity_label, brightness_label, contrast_label]
 	var sliders: Array[HSlider] = [transparency_slider, image_opacity_slider, brightness_slider, contrast_slider]
 	for index in range(4):
-		var column_origin := origin + Vector2(index * (column_width + gap), 0)
-		Hud._place_control(labels[index], Rect2(column_origin, Vector2(column_width, 17)))
-		Hud._place_control(sliders[index], Rect2(column_origin + Vector2(0, 16), Vector2(column_width, 19)))
+		var column := index % 2
+		@warning_ignore("integer_division")
+		var row := index / 2
+		var control_origin := origin + Vector2(column * (column_width + column_gap), row * 24.0)
+		Hud._place_control(labels[index], Rect2(control_origin, Vector2(column_width, 13)))
+		Hud._place_control(sliders[index], Rect2(control_origin + Vector2(0, 12), Vector2(column_width, 14)))
 	Hud._place_control($Control/CCDImageInfoBtn, Rect2(panel.position + Vector2(112, 6), Vector2(20, 20)))
 	Hud._place_control($Control/CCDImgLabel, Rect2(panel.position + Vector2(14, 5), Vector2(96, 24)))
 	Hud._place_control($Control/ToggleTransparency,
